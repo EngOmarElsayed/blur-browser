@@ -1,0 +1,11 @@
+{
+  "MLModelVersionStringKey" : "1.2.0",
+  "MLModelDescriptionKey" : "NSFW image classifier (MobileNetV2) - 5 classes",
+  "MLModelCreatorDefinedKey" : {
+    "com.github.apple.coremltools.version" : "9.0",
+    "com.github.apple.coremltools.source" : "tensorflow==2.20.0",
+    "com.github.apple.coremltools.conversion_date" : "2026-03-14"
+  },
+  "MLModelAuthorKey" : "GantMan\/nsfw_model",
+  "MLModelLicenseKey" : "--"
+}
