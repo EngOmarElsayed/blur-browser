@@ -2,7 +2,7 @@ import AppKit
 import Observation
 
 @MainActor
-final class BrowserWindowController: NSWindowController {
+final class BrowserWindowController: NSWindowController, NSWindowDelegate {
 
     let tabManager = TabManager()
     let historyStore = HistoryStore()
@@ -21,6 +21,13 @@ final class BrowserWindowController: NSWindowController {
     required init?(coder: NSCoder) { fatalError() }
 
     private func setup() {
+        window?.delegate = self
+
+        // Restore previous session if enabled
+        if SettingsStore.shared.restoreTabsOnLaunch {
+            TabSessionStore.restore(into: tabManager)
+        }
+
         splitVC = MainSplitViewController(tabManager: tabManager, historyStore: historyStore)
         splitVC.webViewController.onNewTabRequested = { [weak self] url in
             self?.tabManager.addNewTab(url: url)
@@ -34,23 +41,34 @@ final class BrowserWindowController: NSWindowController {
 
         window?.contentViewController = splitVC
 
-        // Observe selected tab changes and URL changes to update web view and address bar
+
+        // Observe selected tab changes, URL changes, and loading progress
         observationTask = Task { [weak self] in
             guard let self else { return }
             var lastID: UUID?
             var lastURL: URL?
+            var lastProgress: Double = 0
+            var lastLoading: Bool = false
             while !Task.isCancelled {
                 let currentID = tabManager.selectedTabID
                 let currentURL = tabManager.selectedTab?.url
+                let currentProgress = tabManager.selectedTab?.estimatedProgress ?? 0
+                let currentLoading = tabManager.selectedTab?.isLoading ?? false
 
                 if currentID != lastID {
                     lastID = currentID
                     lastURL = currentURL
+                    lastProgress = currentProgress
+                    lastLoading = currentLoading
                     splitVC.webViewController.displayTab(tabManager.selectedTab)
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)
                 } else if currentURL != lastURL {
                     lastURL = currentURL
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)
+                } else if currentProgress != lastProgress || currentLoading != lastLoading {
+                    lastProgress = currentProgress
+                    lastLoading = currentLoading
+                    splitVC.addressBar.updateProgress(currentProgress, isLoading: currentLoading)
                 }
 
                 try? await Task.sleep(for: .milliseconds(50))
@@ -60,6 +78,14 @@ final class BrowserWindowController: NSWindowController {
 
     deinit {
         observationTask?.cancel()
+    }
+
+    // MARK: - NSWindowDelegate
+
+    nonisolated func windowWillClose(_ notification: Notification) {
+        Task { @MainActor in
+            TabSessionStore.save(tabManager: tabManager)
+        }
     }
 
     // MARK: - Actions forwarded from AppDelegate
@@ -119,6 +145,10 @@ final class BrowserWindowController: NSWindowController {
         splitVC.toggleHistoryMode()
     }
 
+    func toggleAddressBar() {
+        splitVC.toggleAddressBar()
+    }
+
     func nextTab() {
         tabManager.selectNextTab()
     }
@@ -129,5 +159,21 @@ final class BrowserWindowController: NSWindowController {
 
     func selectTab(at index: Int) {
         tabManager.selectTab(at: index)
+    }
+
+    private var isInspectorOpen = false
+
+    func toggleInspector() {
+        guard let webView = tabManager.selectedTab?.webView else { return }
+        webView.isInspectable = true
+        guard let inspector = webView.perform(Selector(("_inspector")))?.takeUnretainedValue() else { return }
+
+        if isInspectorOpen {
+            _ = inspector.perform(#selector(NSRunningApplication.hide))
+            isInspectorOpen = false
+        } else {
+            _ = inspector.perform(Selector(("show")))
+            isInspectorOpen = true
+        }
     }
 }

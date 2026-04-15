@@ -46,11 +46,15 @@ final class SidebarViewController: NSViewController {
         addChild(hostingController)
         view.addSubview(hostingController.view)
 
-        NSLayoutConstraint.activate([
+        // Use high (non-required) priority so constraints don't conflict with
+        // the autoresizing-mask width=0 constraint during the initial layout pass.
+        let constraints = [
             hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
             hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-        ])
+        ]
+        constraints.forEach { $0.priority = .init(999) }
+        NSLayoutConstraint.activate(constraints)
     }
 }

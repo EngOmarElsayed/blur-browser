@@ -5,20 +5,21 @@ import AppKit
 enum Colors {
     // Foreground
     static let foregroundPrimary   = NSColor(hex: "#1A1A1A")
-    static let foregroundSecondary = NSColor(hex: "#666666")
-    static let foregroundMuted     = NSColor(hex: "#888888")
+    static let foregroundSecondary = NSColor(hex: "#5A5E6B")
+    static let foregroundMuted     = NSColor(hex: "#00000")
     static let foregroundInverse   = NSColor(hex: "#FFFFFF")
 
     // Surfaces
     static let surfacePrimary   = NSColor(hex: "#FFFFFF")
-    static let surfaceSecondary = NSColor(hex: "#F7F8FA")
+    static let surfaceSecondary = NSColor(hex: "#EAECF5")
     static let surfaceInverse   = NSColor(hex: "#0A0A0A")
 
     // UI
-    static let accentPrimary = NSColor(hex: "#4A9FD8")
-    static let borderLight   = NSColor(hex: "#E5E7EB")
-    static let hoverBg       = NSColor(hex: "#EAECEF")
-    static let sidebarBg     = NSColor(hex: "#F0F1F3")
+    static let accentPrimary = NSColor(hex: "#6366F1")
+    static let borderLight   = NSColor(hex: "#C5CAE0")
+    static let hoverBg       = NSColor(hex: "#D0D5EB")
+    static let sidebarBg     = NSColor(hex: "#B8BFD9")
+    static let chromeBg      = NSColor(hex: "#92b4f4")
 }
 
 // MARK: - Layout Constants
@@ -60,7 +61,53 @@ enum AppConstants {
     static let googleSuggestURL = "https://suggestqueries.google.com/complete/search?client=firefox&q="
     static let defaultHomeURL   = "https://www.google.com"
     static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
-    static let appName = "Browse"
+    static let appName = "Blur-Browser"
+}
+
+// MARK: - Settings Colors (SwiftUI)
+
+enum SettingsColors {
+    static let chrome = Color(hex: "#C4CBE3")
+    static let windowBorder = Color(hex: "#9BA3C4")
+    static let surface = Color.white
+    static let borderLight = Color(hex: "#C5CAE0")
+    static let accent = Color(hex: "#6366F1")
+    static let fgPrimary = Color(hex: "#1A1A1A")
+    static let fgSecondary = Color(hex: "#5A5E6B")
+    static let hover = Color(hex: "#D0D5EB")
+    static let danger = Color(hex: "#EF4444")
+    static let allowGreen = Color(hex: "#22C55E")
+    static let denyRed = Color(hex: "#EF4444")
+    static let trafficRed = Color(hex: "#FF5F57")
+    static let trafficYellow = Color(hex: "#FEBC2E")
+    static let trafficGreen = Color(hex: "#28C840")
+}
+
+// MARK: - SwiftUI Color Hex Extension
+
+import SwiftUI
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: .alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let r, g, b, a: UInt64
+        switch hex.count {
+        case 6:
+            (r, g, b, a) = ((int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF, 255)
+        case 8:
+            (r, g, b, a) = ((int >> 24) & 0xFF, (int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF)
+        default:
+            (r, g, b, a) = (0, 0, 0, 255)
+        }
+        self.init(
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
 }
 
 // MARK: - NSColor Hex Extension

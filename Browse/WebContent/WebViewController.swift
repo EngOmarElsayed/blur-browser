@@ -23,10 +23,11 @@ final class WebViewController: NSViewController {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
+    private let cornerMaskView = CornerMaskView()
+
     override func loadView() {
         view = NSView()
         view.wantsLayer = true
-        view.layer?.backgroundColor = Colors.surfacePrimary.cgColor
     }
 
     override func viewDidLayout() {
@@ -61,7 +62,6 @@ final class WebViewController: NSViewController {
         let wv = tab.webView
         wv.navigationDelegate = coordinator
         wv.uiDelegate = coordinator
-        coordinator.observe(wv, for: tab)
 
         // Register content filter message handlers
         coordinator.resetFilterState()
@@ -70,6 +70,10 @@ final class WebViewController: NSViewController {
         wv.translatesAutoresizingMaskIntoConstraints = true
         view.addSubview(wv)
         currentWebView = wv
+
+        // Corner mask on top of web view to fake rounded corners
+        cornerMaskView.removeFromSuperview()
+        view.addSubview(cornerMaskView)
 
         layoutCurrentWebView()
 
@@ -82,6 +86,9 @@ final class WebViewController: NSViewController {
     private func layoutCurrentWebView() {
         guard let wv = currentWebView else { return }
         wv.frame = view.bounds
+        cornerMaskView.frame = view.bounds
+        // Keep corner mask above web view
+        view.addSubview(cornerMaskView, positioned: .above, relativeTo: wv)
     }
 
     // MARK: - Navigation
@@ -94,6 +101,109 @@ final class WebViewController: NSViewController {
             currentWebView?.reloadFromOrigin()
         } else {
             currentWebView?.reload()
+        }
+    }
+
+    // MARK: - Permission Banner
+
+    private var currentPermissionBanner: PermissionBannerView?
+
+    func showPermissionBanner(
+        type: PermissionBannerView.PermissionType,
+        host: String,
+        completion: @escaping (Bool) -> Void
+    ) {
+        // Remove any existing banner
+        currentPermissionBanner?.removeFromSuperview()
+
+        let banner = PermissionBannerView(type: type, host: host)
+
+        // Allow once — grant and register site so it appears in settings
+        banner.onAllow = {
+            SitePermissionStore.shared.registerSite(host, for: type.sitePermissionTypes)
+            completion(true)
+        }
+
+        // Always allow — grant and save policy
+        banner.onAlwaysAllow = {
+            let store = SitePermissionStore.shared
+            for permType in type.sitePermissionTypes {
+                store.setPolicy(.allow, for: host, type: permType)
+            }
+            completion(true)
+        }
+
+        // Don't allow — deny and save policy
+        banner.onDeny = {
+            let store = SitePermissionStore.shared
+            for permType in type.sitePermissionTypes {
+                store.setPolicy(.deny, for: host, type: permType)
+            }
+            completion(false)
+        }
+
+        view.addSubview(banner)
+        currentPermissionBanner = banner
+
+        // Center the alert in the web content area
+        let w = PermissionBannerView.panelWidth
+        let h = PermissionBannerView.panelHeight
+        banner.frame = NSRect(
+            x: (view.bounds.width - w) / 2,
+            y: (view.bounds.height - h) / 2,
+            width: w,
+            height: h
+        )
+
+        // Animate in
+        banner.alphaValue = 0
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            banner.animator().alphaValue = 1
+        }
+    }
+
+    // MARK: - Authentication Dialog
+
+    private var currentAuthDialog: AuthenticationDialogView?
+
+    func showAuthenticationDialog(
+        host: String,
+        realm: String?,
+        completion: @escaping (String?, String?) -> Void
+    ) {
+        print("[Auth] showAuthenticationDialog called for host: \(host), realm: \(realm ?? "nil")")
+        // Remove any existing dialog
+        currentAuthDialog?.removeFromSuperview()
+
+        let dialog = AuthenticationDialogView(host: host, realm: realm)
+
+        dialog.onSubmit = { username, password in
+            completion(username, password)
+        }
+
+        dialog.onCancel = {
+            completion(nil, nil)
+        }
+
+        view.addSubview(dialog)
+        currentAuthDialog = dialog
+
+        // Center the dialog in the web content area
+        let w = AuthenticationDialogView.panelWidth
+        let h = AuthenticationDialogView.panelHeight
+        dialog.frame = NSRect(
+            x: (view.bounds.width - w) / 2,
+            y: (view.bounds.height - h) / 2,
+            width: w,
+            height: h
+        )
+
+        // Animate in
+        dialog.alphaValue = 0
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            dialog.animator().alphaValue = 1
         }
     }
 
@@ -169,14 +279,51 @@ final class WebViewController: NSViewController {
     private func layoutFindBar() {
         guard let fb = findBar else { return }
         let h = Layout.findBarHeight
-        let hPadding: CGFloat = 8
-        let vPadding: CGFloat = 6
+        let vPadding: CGFloat = 8
         let barWidth: CGFloat = 400
         fb.frame = NSRect(
-            x: view.bounds.width - barWidth - hPadding,
+            x: (view.bounds.width - barWidth) / 2,
             y: view.bounds.height - h - vPadding,
             width: barWidth,
             height: h
         )
     }
+}
+
+// MARK: - Corner Mask View
+
+/// Draws the chrome background color into each corner on top of the WKWebView,
+/// faking rounded corners. WKWebView's internal compositing layers ignore
+/// parent masksToBounds, so this overlay paints over the sharp corners instead.
+private final class CornerMaskView: NSView {
+
+    private let maskLayer = CAShapeLayer()
+    private let radius: CGFloat = 8
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        // Fill the corners with chrome color, cut out the rounded rect center
+        maskLayer.fillRule = .evenOdd
+        maskLayer.fillColor = Colors.chromeBg.cgColor
+        layer?.addSublayer(maskLayer)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func layout() {
+        super.layout()
+        let rect = bounds
+        maskLayer.frame = rect
+
+        // Outer path = full rect, inner path = rounded rect (punched out)
+        let outer = CGMutablePath()
+        outer.addRect(rect)
+        outer.addRoundedRect(in: rect, cornerWidth: radius, cornerHeight: radius)
+        maskLayer.path = outer
+    }
+
+    // Pass all events through — this is purely visual
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }

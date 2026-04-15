@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		D09FFA50AAE51F3CF26B8687 /* Browse.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Browse.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D09FFA50AAE51F3CF26B8687 /* Blur-Browser.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Blur-Browser.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -17,7 +17,7 @@
 				Assets.xcassets,
 				Resources/Info.plist,
 			);
-			target = 2B175AB783CD2F72B0091F5A /* Browse */;
+			target = 2B175AB783CD2F72B0091F5A /* Blur-Browser */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -29,7 +29,7 @@
 		7EC29C17C12080900CE9056C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D09FFA50AAE51F3CF26B8687 /* Browse.app */,
+				D09FFA50AAE51F3CF26B8687 /* Blur-Browser.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -45,9 +45,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2B175AB783CD2F72B0091F5A /* Browse */ = {
+		2B175AB783CD2F72B0091F5A /* Blur-Browser */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C003A9BFC23AC12C6C48CC14 /* Build configuration list for PBXNativeTarget "Browse" */;
+			buildConfigurationList = C003A9BFC23AC12C6C48CC14 /* Build configuration list for PBXNativeTarget "Blur-Browser" */;
 			buildPhases = (
 				C90AF4B56B55E12C737B6CC4 /* Sources */,
 				41B485D52F8E172C00C19BE3 /* Resources */,
@@ -59,11 +59,12 @@
 			fileSystemSynchronizedGroups = (
 				41B485B62F8E151100C19BE3 /* Browse */,
 			);
-			name = Browse;
+			name = "Blur-Browser";
 			packageProductDependencies = (
+				41B487EC2F8F731C00C19BE3 /* AsyncImage */,
 			);
 			productName = Browse;
-			productReference = D09FFA50AAE51F3CF26B8687 /* Browse.app */;
+			productReference = D09FFA50AAE51F3CF26B8687 /* Blur-Browser.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -74,13 +75,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
-				TargetAttributes = {
-					2B175AB783CD2F72B0091F5A = {
-						ProvisioningStyle = Automatic;
-					};
-				};
 			};
-			buildConfigurationList = B5836E579D90B2DE022E946C /* Build configuration list for PBXProject "Browse" */;
+			buildConfigurationList = B5836E579D90B2DE022E946C /* Build configuration list for PBXProject "Blur-Browser" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -90,10 +86,13 @@
 			);
 			mainGroup = CAD4B463BB7B4C9B98406E5B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				41B487EB2F8F731C00C19BE3 /* XCRemoteSwiftPackageReference "AsyncImage" */,
+			);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2B175AB783CD2F72B0091F5A /* Browse */,
+				2B175AB783CD2F72B0091F5A /* Blur-Browser */,
 			);
 		};
 /* End PBXProject section */
@@ -186,23 +185,31 @@
 		55740F7602025F2D8B55016F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Blur-icon";
 				CODE_SIGN_ENTITLEMENTS = Browse/Resources/Browse.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9PYC9KWKRS;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Browse/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Blur-Browser";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "A website is requesting access to your camera.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "A website is requesting access to your location.";
 				INFOPLIST_KEY_NSMainNibFile = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "A website is requesting access to your microphone.";
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.browse.app;
-				PRODUCT_NAME = Browse;
+				MARKETING_VERSION = 0.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Blur-Browser.app";
+				PRODUCT_NAME = "Blur-Browser";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -270,23 +277,31 @@
 		90457E0B8A436B755706E7EF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Blur-icon";
 				CODE_SIGN_ENTITLEMENTS = Browse/Resources/Browse.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9PYC9KWKRS;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Browse/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Blur-Browser";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "A website is requesting access to your camera.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "A website is requesting access to your location.";
 				INFOPLIST_KEY_NSMainNibFile = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "A website is requesting access to your microphone.";
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.browse.app;
-				PRODUCT_NAME = Browse;
+				MARKETING_VERSION = 0.5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Blur-Browser.app";
+				PRODUCT_NAME = "Blur-Browser";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -296,7 +311,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B5836E579D90B2DE022E946C /* Build configuration list for PBXProject "Browse" */ = {
+		B5836E579D90B2DE022E946C /* Build configuration list for PBXProject "Blur-Browser" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3A5C656343A34F30C6B4EFAA /* Debug */,
@@ -305,7 +320,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		C003A9BFC23AC12C6C48CC14 /* Build configuration list for PBXNativeTarget "Browse" */ = {
+		C003A9BFC23AC12C6C48CC14 /* Build configuration list for PBXNativeTarget "Blur-Browser" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				55740F7602025F2D8B55016F /* Debug */,
@@ -315,6 +330,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		41B487EB2F8F731C00C19BE3 /* XCRemoteSwiftPackageReference "AsyncImage" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/EngOmarElsayed/AsyncImage";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		41B487EC2F8F731C00C19BE3 /* AsyncImage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 41B487EB2F8F731C00C19BE3 /* XCRemoteSwiftPackageReference "AsyncImage" */;
+			productName = AsyncImage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 6204D62CC20420C2115DF85B /* Project object */;
 }

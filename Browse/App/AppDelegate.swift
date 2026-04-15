@@ -6,6 +6,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowController: BrowserWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Disable sudden termination so we get a chance to save session
+        ProcessInfo.processInfo.disableSuddenTermination()
+
         AppMenuBuilder.buildMainMenu()
         openNewWindow()
         NSApp.activate(ignoringOtherApps: true)
@@ -20,6 +23,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
         true
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // Save session before quitting
+        if let wc = windowController {
+            TabSessionStore.save(tabManager: wc.tabManager)
+        }
+        return .terminateNow
+    }
+
+    @objc func openSettings(_ sender: Any?) {
+        SettingsWindowController.shared.showSettings()
     }
 
     @objc func openNewWindow() {
@@ -96,6 +111,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func toggleHistory(_ sender: Any?) {
         guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
         wc.toggleHistory()
+    }
+
+    @objc func toggleAddressBar(_ sender: Any?) {
+        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
+        wc.toggleAddressBar()
+    }
+
+    @objc func toggleInspector(_ sender: Any?) {
+        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
+        wc.toggleInspector()
     }
 
     @objc func selectTab1(_ sender: Any?) { selectTab(at: 0) }

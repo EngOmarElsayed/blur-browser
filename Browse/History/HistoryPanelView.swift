@@ -70,7 +70,7 @@ struct HistoryPanelView: View {
                     } else {
                         ForEach(filteredGroups) { group in
                             Section {
-                                ForEach(group.entries, id: \.url) { entry in
+                                ForEach(group.entries, id: \.id) { entry in
                                     historyRow(entry)
                                 }
                             } header: {
@@ -80,14 +80,13 @@ struct HistoryPanelView: View {
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(Color(nsColor: Colors.sidebarBg))
                             }
                         }
                     }
                 }
             }
         }
-        .background(Color(nsColor: Colors.sidebarBg))
+        .background(Color(nsColor: Colors.chromeBg))
     }
 
     private var emptyState: some View {

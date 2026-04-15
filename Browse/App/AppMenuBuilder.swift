@@ -11,6 +11,8 @@ enum AppMenuBuilder {
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About \(AppConstants.appName)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
+        addItem(to: appMenu, title: "Settings...", action: #selector(AppDelegate.openSettings(_:)), key: ",", target: delegate)
+        appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Hide \(AppConstants.appName)", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let hideOthers = appMenu.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
@@ -56,9 +58,12 @@ enum AppMenuBuilder {
         // View menu
         let viewMenu = NSMenu(title: "View")
         addItem(to: viewMenu, title: "Toggle Sidebar", action: #selector(AppDelegate.toggleSidebar(_:)), key: "\\", target: delegate)
+        addItem(to: viewMenu, title: "Focus Mode", action: #selector(AppDelegate.toggleAddressBar(_:)), key: "F", modifiers: [.command, .shift], target: delegate)
         viewMenu.addItem(.separator())
         addItem(to: viewMenu, title: "Reload", action: #selector(AppDelegate.reloadPage(_:)), key: "r", target: delegate)
         addItem(to: viewMenu, title: "Hard Reload", action: #selector(AppDelegate.hardReload(_:)), key: "R", modifiers: [.command, .shift], target: delegate)
+        viewMenu.addItem(.separator())
+        addItem(to: viewMenu, title: "Web Inspector", action: #selector(AppDelegate.toggleInspector(_:)), key: "c", modifiers: [.command, .option], target: delegate)
         let viewMenuItem = NSMenuItem()
         viewMenuItem.submenu = viewMenu
         mainMenu.addItem(viewMenuItem)

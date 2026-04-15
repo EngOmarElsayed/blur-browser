@@ -14,7 +14,7 @@ struct SessionData: Codable {
 enum TabSessionStore {
     private static var fileURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("Browse", isDirectory: true)
+        let dir = appSupport.appendingPathComponent(AppConstants.appName, isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("session.json")
     }

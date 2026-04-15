@@ -13,7 +13,7 @@ final class BrowserWindow: NSWindow {
         titleVisibility = .hidden
         minSize = NSSize(width: Layout.windowMinWidth, height: Layout.windowMinHeight)
         isReleasedWhenClosed = false
-        backgroundColor = Colors.surfaceSecondary
+        backgroundColor = Colors.chromeBg
 
         // Explicitly set appearance so macOS renders traffic lights with correct colors
         appearance = NSAppearance(named: .aqua)
@@ -25,6 +25,23 @@ final class BrowserWindow: NSWindow {
         toolbarStyle = .unified
 
         center()
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(willEnterFullScreen),
+            name: NSWindow.willEnterFullScreenNotification, object: self
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(willExitFullScreen),
+            name: NSWindow.willExitFullScreenNotification, object: self
+        )
+    }
+
+    @objc private func willEnterFullScreen() {
+        toolbar?.isVisible = false
+    }
+
+    @objc private func willExitFullScreen() {
+        toolbar?.isVisible = true
     }
 
     // Required for traffic lights to render in their active (colored) state

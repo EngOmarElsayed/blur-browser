@@ -13,13 +13,19 @@ final class MainSplitViewController: NSViewController {
     private var historyHostingVC: NSHostingController<HistoryPanelView>!
     private let leftDividerView = ResizeDividerView()
     private let rightDividerView = ResizeDividerView()
+    private let borderOverlay = WindowBorderOverlayView()
 
     private var sidebarWidth: CGFloat = Layout.sidebarDefaultWidth
     private var historyPanelWidth: CGFloat = 300
     private var isSidebarCollapsed = false
     private var isHistoryCollapsed = true
+    private(set) var isAddressBarHidden = false
+    private var isAddressBarTemporarilyShown = false
     private var toolbarView: NSView!
+    private let contentContainerView = NSView()
     private let sidebarToggleButton = NSButton()
+    private let topHoverZone = HoverDetectorView()
+    private var hideTimer: Timer?
 
     init(tabManager: TabManager, historyStore: HistoryStore) {
         self.tabManager = tabManager
@@ -35,10 +41,31 @@ final class MainSplitViewController: NSViewController {
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 1200, height: 800))
         view.wantsLayer = true
+        view.layer?.backgroundColor = Colors.chromeBg.cgColor
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        // -- Content container (toolbar + web view) with rounded corners --
+        contentContainerView.wantsLayer = true
+        contentContainerView.layer?.cornerRadius = 8
+        contentContainerView.layer?.masksToBounds = true
+        view.addSubview(contentContainerView)
+
+        // -- Toolbar --
+        addressBar.onToggleSidebar = { [weak self] in
+            self?.toggleSidebar()
+        }
+        addressBar.onToggleAddressBar = { [weak self] in
+            self?.toggleAddressBar()
+        }
+        toolbarView = makeToolbarView()
+        contentContainerView.addSubview(toolbarView)
+
+        // -- Web content --
+        addChild(webViewController)
+        contentContainerView.addSubview(webViewController.view)
 
         // -- Left sidebar --
         sidebarVC = SidebarViewController(tabManager: tabManager, historyStore: historyStore)
@@ -57,17 +84,6 @@ final class MainSplitViewController: NSViewController {
         sidebarToggleButton.action = #selector(sidebarToggleTapped)
         view.addSubview(sidebarToggleButton)
 
-        // -- Toolbar --
-        addressBar.onToggleSidebar = { [weak self] in
-            self?.toggleSidebar()
-        }
-        toolbarView = makeToolbarView()
-        view.addSubview(toolbarView)
-
-        // -- Web content --
-        addChild(webViewController)
-        view.addSubview(webViewController.view)
-
         // -- Right history panel (created once, starts hidden) --
         let panelView = HistoryPanelView(
             historyStore: historyStore,
@@ -79,12 +95,12 @@ final class MainSplitViewController: NSViewController {
         historyHostingVC = NSHostingController(rootView: panelView)
         historyHostingVC.sizingOptions = []
         historyHostingVC.view.wantsLayer = true
-        historyHostingVC.view.layer?.backgroundColor = Colors.sidebarBg.cgColor
+        historyHostingVC.view.layer?.backgroundColor = Colors.chromeBg.cgColor
         addChild(historyHostingVC)
         view.addSubview(historyHostingVC.view)
         historyHostingVC.view.isHidden = true
 
-        // -- Dividers: added last so they're on top --
+        // -- Dividers --
         view.addSubview(leftDividerView)
         let leftPan = NSPanGestureRecognizer(target: self, action: #selector(handleLeftDividerDrag(_:)))
         leftDividerView.addGestureRecognizer(leftPan)
@@ -93,6 +109,18 @@ final class MainSplitViewController: NSViewController {
         view.addSubview(rightDividerView)
         let rightPan = NSPanGestureRecognizer(target: self, action: #selector(handleRightDividerDrag(_:)))
         rightDividerView.addGestureRecognizer(rightPan)
+
+        // -- Top hover zone for auto-showing address bar --
+        topHoverZone.onMouseEntered = { [weak self] in
+            self?.handleTopHoverEntered()
+        }
+        topHoverZone.onMouseExited = { [weak self] in
+            self?.handleTopHoverExited()
+        }
+        view.addSubview(topHoverZone)
+
+        // -- Arc-style border overlay (topmost, non-interactive) --
+        view.addSubview(borderOverlay)
     }
 
     override func viewDidLayout() {
@@ -103,13 +131,23 @@ final class MainSplitViewController: NSViewController {
     private func layoutSubviews() {
         let bounds = view.bounds
         let toolbarHeight = Layout.toolbarHeight
-        let dividerWidth: CGFloat = 1
         let dividerHitWidth: CGFloat = 16
+        // Chrome padding — visible on right and bottom edges (left is sidebar, top is toolbar)
+        let chromeEdge: CGFloat = 12
+
+        // In full screen, the safe area top inset is 0 (no titlebar).
+        // In windowed mode with fullSizeContentView, the titlebar occupies space at the top.
+        let topInset: CGFloat = view.safeAreaInsets.top
 
         // ── Left sidebar ──
         let effectiveSidebarWidth = isSidebarCollapsed ? 0 : sidebarWidth
 
-        sidebarVC.view.frame = NSRect(x: 0, y: 0, width: effectiveSidebarWidth, height: bounds.height)
+        sidebarVC.view.frame = NSRect(
+            x: 0,
+            y: chromeEdge,
+            width: effectiveSidebarWidth,
+            height: bounds.height - chromeEdge - topInset
+        )
         sidebarVC.view.isHidden = isSidebarCollapsed
 
         // Sidebar toggle button
@@ -121,80 +159,116 @@ final class MainSplitViewController: NSViewController {
         } else {
             trafficLightCenterY = bounds.height - 14
         }
-        sidebarToggleButton.isHidden = isSidebarCollapsed
-        if !isSidebarCollapsed {
-            sidebarToggleButton.frame = NSRect(
-                x: effectiveSidebarWidth - toggleSize - 8,
-                y: trafficLightCenterY - toggleSize / 2,
-                width: toggleSize, height: toggleSize
-            )
+        // Sidebar toggle is now in the address bar — hide this one
+        sidebarToggleButton.isHidden = true
+
+        // Hide traffic light buttons when both sidebar and address bar are hidden (and not temporarily shown)
+        let hideTrafficLights = isSidebarCollapsed && isAddressBarHidden && !isAddressBarTemporarilyShown
+        for buttonType: NSWindow.ButtonType in [.closeButton, .miniaturizeButton, .zoomButton] {
+            view.window?.standardWindowButton(buttonType)?.isHidden = hideTrafficLights
         }
 
-        // Left divider
+        // Left divider (between sidebar and web content only)
         leftDividerView.frame = NSRect(
-            x: effectiveSidebarWidth - (dividerHitWidth - dividerWidth) / 2,
-            y: 0, width: dividerHitWidth, height: bounds.height
+            x: effectiveSidebarWidth - (dividerHitWidth - 1) / 2,
+            y: chromeEdge, width: dividerHitWidth,
+            height: bounds.height
         )
-        leftDividerView.isHidden = isSidebarCollapsed
-        view.addSubview(leftDividerView, positioned: .above, relativeTo: nil)
+        leftDividerView.isHidden = true
+        view.addSubview(leftDividerView, positioned: .above, relativeTo: contentContainerView)
 
-        let contentX = effectiveSidebarWidth + (isSidebarCollapsed ? 0 : dividerWidth)
+        let contentX = isSidebarCollapsed ? chromeEdge : effectiveSidebarWidth
 
         // ── Right history panel ──
         let effectiveHistoryWidth = isHistoryCollapsed ? 0 : historyPanelWidth
 
         historyHostingVC.view.isHidden = isHistoryCollapsed
         historyHostingVC.view.frame = NSRect(
-            x: bounds.width - effectiveHistoryWidth,
-            y: 0,
+            x: bounds.width - effectiveHistoryWidth - chromeEdge,
+            y: chromeEdge,
             width: effectiveHistoryWidth,
-            height: bounds.height
+            height: bounds.height - chromeEdge
         )
 
         // Right divider
         rightDividerView.isHidden = isHistoryCollapsed
         if !isHistoryCollapsed {
             rightDividerView.frame = NSRect(
-                x: bounds.width - effectiveHistoryWidth - (dividerHitWidth - dividerWidth) / 2,
-                y: 0, width: dividerHitWidth, height: bounds.height
+                x: bounds.width - effectiveHistoryWidth - chromeEdge - (dividerHitWidth - 1) / 2,
+                y: chromeEdge, width: dividerHitWidth,
+                height: bounds.height - chromeEdge
             )
-            view.addSubview(rightDividerView, positioned: .above, relativeTo: nil)
+            view.addSubview(rightDividerView, positioned: .above, relativeTo: historyHostingVC.view)
         }
 
-        // ── Content area (toolbar + web view) ──
-        let contentRight = isHistoryCollapsed ? 0 : effectiveHistoryWidth + dividerWidth
+        // ── Content container (toolbar + web view) ──
+        let contentRight = isHistoryCollapsed ? chromeEdge : effectiveHistoryWidth + chromeEdge + 1
         let fullContentWidth = bounds.width - contentX - contentRight
 
-        toolbarView.frame = NSRect(
+        // The toolbar is effectively visible if it's not hidden OR temporarily shown on hover
+        let isToolbarVisible = !isAddressBarHidden || isAddressBarTemporarilyShown
+        let topChromeEdge: CGFloat = isToolbarVisible ? 0 : chromeEdge
+        let containerHeight = bounds.height - chromeEdge - topChromeEdge
+
+        contentContainerView.frame = NSRect(
             x: contentX,
-            y: bounds.height - toolbarHeight,
+            y: chromeEdge,
+            width: fullContentWidth,
+            height: containerHeight
+        )
+
+        // Toolbar at top of container
+        toolbarView.isHidden = !isToolbarVisible
+        let effectiveToolbarHeight: CGFloat = isToolbarVisible ? toolbarHeight : 0
+
+        // Top hover zone — invisible strip at the top of the window to detect mouse
+        let hoverZoneHeight: CGFloat = 10
+        topHoverZone.frame = NSRect(
+            x: 0,
+            y: bounds.height - hoverZoneHeight,
+            width: bounds.width,
+            height: hoverZoneHeight
+        )
+        // Only active when the address bar is permanently hidden and not temporarily shown
+        topHoverZone.isHidden = !isAddressBarHidden || isAddressBarTemporarilyShown
+        view.addSubview(topHoverZone, positioned: .above, relativeTo: borderOverlay)
+        toolbarView.frame = NSRect(
+            x: 0,
+            y: containerHeight - toolbarHeight,
             width: fullContentWidth,
             height: toolbarHeight
         )
 
-        let webHeight = bounds.height - toolbarHeight
+        // Web content fills remainder below toolbar (or full height when toolbar hidden)
+        let webHeight = containerHeight - effectiveToolbarHeight
         webViewController.view.frame = NSRect(
-            x: contentX, y: 0,
+            x: 0, y: 0,
             width: fullContentWidth,
             height: webHeight
         )
+
+        // Border overlay always on top, covering full bounds
+        borderOverlay.frame = bounds
+        view.addSubview(borderOverlay, positioned: .above, relativeTo: nil)
     }
 
     private func makeToolbarView() -> NSView {
         let bar = NSView()
         bar.wantsLayer = true
-        bar.layer?.backgroundColor = Colors.surfaceSecondary.cgColor
+        bar.layer?.backgroundColor = .clear
 
         addChild(addressBar)
         addressBar.view.translatesAutoresizingMaskIntoConstraints = false
         bar.addSubview(addressBar.view)
 
-        NSLayoutConstraint.activate([
+        let constraints = [
             addressBar.view.leadingAnchor.constraint(equalTo: bar.leadingAnchor),
             addressBar.view.trailingAnchor.constraint(equalTo: bar.trailingAnchor),
             addressBar.view.topAnchor.constraint(equalTo: bar.topAnchor),
             addressBar.view.bottomAnchor.constraint(equalTo: bar.bottomAnchor),
-        ])
+        ]
+        constraints.forEach { $0.priority = .init(999) }
+        NSLayoutConstraint.activate(constraints)
 
         return bar
     }
@@ -211,6 +285,77 @@ final class MainSplitViewController: NSViewController {
             ctx.allowsImplicitAnimation = true
             isSidebarCollapsed.toggle()
             addressBar.setSidebarCollapsed(isSidebarCollapsed)
+            layoutSubviews()
+        }
+    }
+
+    func toggleAddressBar() {
+        // If we're dismissing a temporary reveal, just clear the temp state
+        if isAddressBarTemporarilyShown {
+            isAddressBarTemporarilyShown = false
+        }
+        hideTimer?.invalidate()
+        hideTimer = nil
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.allowsImplicitAnimation = true
+            isAddressBarHidden.toggle()
+            layoutSubviews()
+        }
+    }
+
+    // MARK: - Top Hover Auto-Reveal
+
+    private func handleTopHoverEntered() {
+        guard isAddressBarHidden, !isAddressBarTemporarilyShown else { return }
+        hideTimer?.invalidate()
+        hideTimer = nil
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.allowsImplicitAnimation = true
+            isAddressBarTemporarilyShown = true
+            layoutSubviews()
+        }
+    }
+
+    private func handleTopHoverExited() {
+        guard isAddressBarTemporarilyShown else { return }
+        // Small delay before hiding so the user can move into the toolbar
+        hideTimer?.invalidate()
+        hideTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.dismissTemporaryAddressBar()
+            }
+        }
+    }
+
+    private func dismissTemporaryAddressBar() {
+        guard isAddressBarTemporarilyShown else { return }
+        // Check if mouse is still in the toolbar area
+        if let window = view.window {
+            let mouseInWindow = window.mouseLocationOutsideOfEventStream
+            let mouseInView = view.convert(mouseInWindow, from: nil)
+            let toolbarFrame = toolbarView.convert(toolbarView.bounds, to: view)
+            let expandedFrame = NSRect(
+                x: toolbarFrame.origin.x,
+                y: toolbarFrame.origin.y,
+                width: toolbarFrame.width,
+                height: toolbarFrame.height + 10
+            )
+            if expandedFrame.contains(mouseInView) {
+                hideTimer?.invalidate()
+                hideTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        self?.dismissTemporaryAddressBar()
+                    }
+                }
+                return
+            }
+        }
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.allowsImplicitAnimation = true
+            isAddressBarTemporarilyShown = false
             layoutSubviews()
         }
     }
@@ -241,6 +386,74 @@ final class MainSplitViewController: NSViewController {
     }
 }
 
+// MARK: - Arc-Style Window Border Overlay
+
+/// Draws a rounded-rect border inside the window frame on top of all content.
+/// Passes all mouse events through (non-interactive).
+final class WindowBorderOverlayView: NSView {
+
+    private let borderLayer = CAShapeLayer()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.addSublayer(borderLayer)
+        borderLayer.fillColor = nil
+        borderLayer.lineWidth = 3.5
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func layout() {
+        super.layout()
+        let inset: CGFloat = 1.75
+        let rect = bounds.insetBy(dx: inset, dy: inset)
+        borderLayer.path = CGPath(roundedRect: rect, cornerWidth: 11, cornerHeight: 11, transform: nil)
+        borderLayer.frame = bounds
+    }
+
+    // Pass all events through
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+// MARK: - Hover Detector View
+
+/// An invisible view that detects mouse enter/exit via a tracking area.
+final class HoverDetectorView: NSView {
+
+    var onMouseEntered: (() -> Void)?
+    var onMouseExited: (() -> Void)?
+
+    private var trackingArea: NSTrackingArea?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let existing = trackingArea {
+            removeTrackingArea(existing)
+        }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        onMouseEntered?()
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        onMouseExited?()
+    }
+
+    // Pass all clicks through — this view is purely for hover detection
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
 // MARK: - Resize Divider View
 
 final class ResizeDividerView: NSView {
@@ -250,7 +463,7 @@ final class ResizeDividerView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        lineLayer.backgroundColor = Colors.borderLight.cgColor
+        lineLayer.backgroundColor = Colors.borderLight.withAlphaComponent(0.4).cgColor
         layer?.addSublayer(lineLayer)
     }
 

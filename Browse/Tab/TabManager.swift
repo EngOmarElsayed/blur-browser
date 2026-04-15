@@ -18,7 +18,7 @@ final class TabManager {
     }
 
     init() {
-        addNewTab(url: URL(string: AppConstants.defaultHomeURL))
+        addNewTab(url: URL(string: SettingsStore.shared.homepageURL))
     }
 
     @discardableResult
@@ -36,6 +36,15 @@ final class TabManager {
     func closeTab(_ tab: BrowserTab) {
         guard let index = tabs.firstIndex(of: tab) else { return }
         let wasSelected = tab.id == selectedTabID
+
+        // Stop any active media capture before closing
+        let wv = tab.webView
+        if wv.cameraCaptureState != .none {
+            wv.setCameraCaptureState(.none)
+        }
+        if wv.microphoneCaptureState != .none {
+            wv.setMicrophoneCaptureState(.none)
+        }
 
         tabs.remove(at: index)
 
@@ -94,7 +103,7 @@ final class TabManager {
             url = URL(string: "https://\(urlString)")
         } else {
             let encoded = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString
-            url = URL(string: "\(AppConstants.defaultSearchURL)\(encoded)")
+            url = URL(string: "\(SettingsStore.shared.searchEngine.searchURL)\(encoded)")
         }
 
         if let url {

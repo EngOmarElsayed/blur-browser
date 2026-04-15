@@ -69,7 +69,7 @@ final class ContentFilterService {
 
         let neutralConfidence = results.first(where: { $0.label == "neutral" })?.confidence ?? 0
         let drawingsConfidence = results.first(where: { $0.label == "drawings" })?.confidence ?? 0
-        return neutralConfidence < 0.5 || drawingsConfidence < 0.5
+        return neutralConfidence < 0.5 && drawingsConfidence < 0.5
     }
 
     /// Format all results into a readable string for logging.

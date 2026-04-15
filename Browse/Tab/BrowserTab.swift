@@ -15,6 +15,7 @@ final class BrowserTab: Identifiable {
     var isPinned: Bool = false
 
     let webView: WKWebView
+    private var observations: [NSKeyValueObservation] = []
 
     init(url: URL? = nil, configuration: WKWebViewConfiguration? = nil) {
         self.id = UUID()
@@ -27,9 +28,46 @@ final class BrowserTab: Identifiable {
         wv.allowsBackForwardNavigationGestures = true
         self.webView = wv
 
+        // Start observing immediately so progress/loading state is tracked
+        // from the moment the page starts loading
+        observeWebView(wv)
+
         if let url {
             wv.load(URLRequest(url: url))
         }
+    }
+
+    private func observeWebView(_ wv: WKWebView) {
+        observations.append(
+            wv.observe(\.estimatedProgress) { [weak self] wv, _ in
+                Task { @MainActor in self?.estimatedProgress = wv.estimatedProgress }
+            }
+        )
+        observations.append(
+            wv.observe(\.isLoading) { [weak self] wv, _ in
+                Task { @MainActor in self?.isLoading = wv.isLoading }
+            }
+        )
+        observations.append(
+            wv.observe(\.title) { [weak self] wv, _ in
+                Task { @MainActor in self?.title = wv.title ?? "Untitled" }
+            }
+        )
+        observations.append(
+            wv.observe(\.url) { [weak self] wv, _ in
+                Task { @MainActor in self?.url = wv.url }
+            }
+        )
+        observations.append(
+            wv.observe(\.canGoBack) { [weak self] wv, _ in
+                Task { @MainActor in self?.canGoBack = wv.canGoBack }
+            }
+        )
+        observations.append(
+            wv.observe(\.canGoForward) { [weak self] wv, _ in
+                Task { @MainActor in self?.canGoForward = wv.canGoForward }
+            }
+        )
     }
 
     var displayTitle: String {
@@ -41,6 +79,12 @@ final class BrowserTab: Identifiable {
 
     var displayURL: String {
         url?.absoluteString ?? ""
+    }
+
+    /// Favicon URL derived from the current page's host using Google's favicon service.
+    var faviconURL: URL? {
+        guard let host = url?.host else { return nil }
+        return URL(string: "https://www.google.com/s2/favicons?sz=32&domain=\(host)")
     }
 
     // MARK: - WKWebView Configuration with Content Filter Scripts

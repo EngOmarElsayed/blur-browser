@@ -1,52 +1,13 @@
 import WebKit
 
 @MainActor
-final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate,
-                                           WKScriptMessageHandler, WKScriptMessageHandlerWithReply {
+final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKScriptMessageHandlerWithReply {
 
     weak var viewController: WebViewController?
 
-    private var observations: [NSKeyValueObservation] = []
     private let filter = ContentFilterService.shared
     private var processedElementIds = Set<String>()
     private var imageCount = 0
-
-    // MARK: - Tab Lifecycle
-
-    func observe(_ webView: WKWebView, for tab: BrowserTab) {
-        observations.removeAll()
-
-        observations.append(
-            webView.observe(\.title) { [weak tab] wv, _ in
-                Task { @MainActor in tab?.title = wv.title ?? "Untitled" }
-            }
-        )
-        observations.append(
-            webView.observe(\.url) { [weak tab] wv, _ in
-                Task { @MainActor in tab?.url = wv.url }
-            }
-        )
-        observations.append(
-            webView.observe(\.isLoading) { [weak tab] wv, _ in
-                Task { @MainActor in tab?.isLoading = wv.isLoading }
-            }
-        )
-        observations.append(
-            webView.observe(\.canGoBack) { [weak tab] wv, _ in
-                Task { @MainActor in tab?.canGoBack = wv.canGoBack }
-            }
-        )
-        observations.append(
-            webView.observe(\.canGoForward) { [weak tab] wv, _ in
-                Task { @MainActor in tab?.canGoForward = wv.canGoForward }
-            }
-        )
-        observations.append(
-            webView.observe(\.estimatedProgress) { [weak tab] wv, _ in
-                Task { @MainActor in tab?.estimatedProgress = wv.estimatedProgress }
-            }
-        )
-    }
 
     /// Register content filter message handlers on a web view's user content controller.
     /// Call this once per tab when the web view is first displayed.
@@ -277,5 +238,115 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate,
             webView.load(navigationAction.request)
         }
         return nil
+    }
+
+    // MARK: - Media Capture Permission (Camera / Microphone)
+    func webView(
+        _ webView: WKWebView,
+        requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        type: WKMediaCaptureType,
+        decisionHandler: @escaping @MainActor @Sendable (WKPermissionDecision) -> Void
+    ) {
+        print("[Permission] requestMediaCapture from \(origin.host), type: \(type.rawValue)")
+
+        let permType: PermissionBannerView.PermissionType
+        switch type {
+        case .camera:              permType = .camera
+        case .microphone:          permType = .microphone
+        case .cameraAndMicrophone: permType = .cameraAndMicrophone
+        @unknown default:          permType = .camera
+        }
+
+        // Check saved policy before showing banner
+        let store = SitePermissionStore.shared
+        let siteTypes = permType.sitePermissionTypes
+        let policies = siteTypes.map { store.effectivePolicy(for: origin.host, type: $0) }
+
+        if policies.contains(.deny) {
+            decisionHandler(.deny)
+            return
+        }
+        if policies.allSatisfy({ $0 == .allow }) {
+            decisionHandler(.grant)
+            return
+        }
+        self.viewController?.showPermissionBanner(type: permType, host: origin.host) { allowed in
+            decisionHandler(allowed ? .grant : .deny)
+        }
+    }
+
+    // MARK: - Geolocation Permission
+    func webView(
+        _ webView: WKWebView,
+        requestDeviceOrientationAndMotionPermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        decisionHandler: @escaping  @Sendable (WKPermissionDecision) -> Void
+    ) {
+        let store = SitePermissionStore.shared
+        let policy = store.effectivePolicy(for: origin.host, type: .location)
+
+        switch policy {
+        case .allow:
+            decisionHandler(.grant)
+        case .deny:
+            decisionHandler(.deny)
+        case .ask:
+            self.viewController?.showPermissionBanner(type: .location, host: origin.host) { allowed in
+                decisionHandler(allowed ? .grant : .deny)
+            }
+        }
+    }
+
+    // MARK: - HTTP Authentication
+
+    func webView(
+        _ webView: WKWebView,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping @MainActor @Sendable (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        let protectionSpace = challenge.protectionSpace
+        print("[Auth] didReceive challenge: method=\(protectionSpace.authenticationMethod), host=\(protectionSpace.host), realm=\(protectionSpace.realm ?? "nil")")
+
+        // Handle server trust (HTTPS certificate) — accept by default
+        if protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
+            if let trust = protectionSpace.serverTrust {
+                completionHandler(.useCredential, URLCredential(trust: trust))
+            } else {
+                completionHandler(.performDefaultHandling, nil)
+            }
+            return
+        }
+
+        // Handle HTTP Basic/Digest authentication
+        if protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPBasic ||
+           protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPDigest {
+
+            let host = protectionSpace.host
+            let realm = protectionSpace.realm
+
+            // If we've already failed too many times, cancel
+            if challenge.previousFailureCount >= 3 {
+                completionHandler(.cancelAuthenticationChallenge, nil)
+                return
+            }
+
+            self.viewController?.showAuthenticationDialog(host: host, realm: realm) { username, password in
+                if let username, let password {
+                    let credential = URLCredential(
+                        user: username,
+                        password: password,
+                        persistence: .forSession
+                    )
+                    completionHandler(.useCredential, credential)
+                } else {
+                    completionHandler(.cancelAuthenticationChallenge, nil)
+                }
+            }
+            return
+        }
+
+        // All other auth methods — default handling
+        completionHandler(.performDefaultHandling, nil)
     }
 }

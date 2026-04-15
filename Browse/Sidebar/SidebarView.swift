@@ -18,12 +18,14 @@ struct SidebarView: View {
             searchField
                 .padding(.horizontal, 10)
                 .padding(.bottom, 8)
+                .opacity(0.0)
+                .disabled(true)
 
             Divider()
 
             tabListView
         }
-        .background(Color(nsColor: Colors.sidebarBg))
+        .background(Color(nsColor: .clear))
     }
 
     // MARK: - Search Field
@@ -48,11 +50,11 @@ struct SidebarView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(Color(nsColor: Colors.surfacePrimary))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(Color(nsColor: Colors.surfacePrimary).opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(nsColor: Colors.borderLight), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(nsColor: Colors.borderLight).opacity(0.5), lineWidth: 1)
         )
     }
 
@@ -67,7 +69,7 @@ struct SidebarView: View {
                     .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
                 Spacer()
                 Button {
-                    tabManager.addNewTab(url: URL(string: AppConstants.defaultHomeURL))
+                    tabManager.addNewTab(url: URL(string: SettingsStore.shared.homepageURL))
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 13))
@@ -80,7 +82,7 @@ struct SidebarView: View {
 
             // Tab list
             ScrollView {
-                LazyVStack(spacing: 6) {
+                LazyVStack(spacing: 2) {
                     ForEach(tabManager.tabs) { tab in
                         TabItemView(
                             tab: tab,
@@ -107,7 +109,7 @@ struct SidebarView: View {
             Divider()
             HStack(spacing: 12) {
                 Button {
-                    // Settings placeholder
+                    SettingsWindowController.shared.showSettings()
                 } label: {
                     Image(systemName: "gearshape")
                         .font(.system(size: 15))

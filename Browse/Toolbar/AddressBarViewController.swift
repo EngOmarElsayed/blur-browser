@@ -11,14 +11,22 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
     private let reloadButton = NSButton()
     private let shareButton = NSButton()
     private let moreButton = NSButton()
+    private let progressBar = NSView()
+    private var progressWidthConstraint: NSLayoutConstraint!
+    private var pendingProgress: (Double, Bool)?
 
     // Constraints that swap depending on sidebar visibility
     private var sidebarToggleWidthConstraint: NSLayoutConstraint!
     private var backLeadingToToggle: NSLayoutConstraint!
     private var backLeadingToView: NSLayoutConstraint!
+    private var toggleLeadingNormal: NSLayoutConstraint!   // 8pt when sidebar visible
+    private var toggleLeadingCollapsed: NSLayoutConstraint! // 90pt when sidebar hidden
 
     /// Called when the sidebar toggle button is tapped
     var onToggleSidebar: (() -> Void)?
+
+    /// Called when the more button is tapped (toggles address bar visibility)
+    var onToggleAddressBar: (() -> Void)?
 
     init(tabManager: TabManager) {
         self.tabManager = tabManager
@@ -31,13 +39,21 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 600, height: Layout.toolbarHeight))
         view.wantsLayer = true
+        view.layer?.backgroundColor = NSColor.clear.cgColor
         setupViews()
     }
 
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        if let (progress, isLoading) = pendingProgress {
+            pendingProgress = nil
+            updateProgress(progress, isLoading: isLoading)
+        }
+    }
+
     private func setupViews() {
-        // Sidebar toggle (shown when sidebar is collapsed)
-        configureNavButton(sidebarToggleButton, symbol: "sidebar.right", action: #selector(toggleSidebarTapped))
-        sidebarToggleButton.isHidden = true
+        // Sidebar toggle (always visible)
+        configureNavButton(sidebarToggleButton, symbol: "sidebar.left", action: #selector(toggleSidebarTapped))
 
         // Back button
         configureNavButton(backButton, symbol: "chevron.left", action: #selector(goBack))
@@ -48,7 +64,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         let urlContainer = NSView()
         urlContainer.wantsLayer = true
         urlContainer.layer?.backgroundColor = Colors.surfacePrimary.cgColor
-        urlContainer.layer?.borderColor = Colors.borderLight.cgColor
+        urlContainer.layer?.borderColor = Colors.borderLight.withAlphaComponent(0.6).cgColor
         urlContainer.layer?.borderWidth = 1
         urlContainer.layer?.cornerRadius = Layout.urlBarHeight / 2
 
@@ -72,7 +88,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         // Right-side buttons
         configureNavButton(reloadButton, symbol: "arrow.clockwise", action: #selector(reloadPage))
         configureNavButton(shareButton, symbol: "square.and.arrow.up", action: #selector(sharePage))
-        configureNavButton(moreButton, symbol: "ellipsis", action: #selector(showMore))
+        configureNavButton(moreButton, symbol: "circle.circle", action: #selector(showMore))
 
         // Layout with AutoLayout
         for v in [sidebarToggleButton, backButton, forwardButton, urlContainer, reloadButton, shareButton, moreButton] {
@@ -85,57 +101,101 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
             urlContainer.addSubview(v)
         }
 
+        // Use high (but not required) priority for horizontal chain constraints so
+        // they don't conflict with the autoresizing-mask constraint when the
+        // toolbar's parent view starts at width 0 during the initial layout pass.
+        let highPriority = NSLayoutConstraint.Priority(999)
+
         // Swappable constraints for sidebar toggle visibility
         sidebarToggleWidthConstraint = sidebarToggleButton.widthAnchor.constraint(equalToConstant: 0)
         backLeadingToToggle = backButton.leadingAnchor.constraint(equalTo: sidebarToggleButton.trailingAnchor, constant: 8)
-        backLeadingToView = backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8)
+        backLeadingToToggle.priority = highPriority
 
-        // Start with sidebar visible (toggle hidden)
+        let backLeading = backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8)
+        backLeading.priority = highPriority
+        backLeadingToView = backLeading
+
+        // Sidebar toggle always visible — always use 28pt width
+        sidebarToggleWidthConstraint.constant = 28
         sidebarToggleWidthConstraint.isActive = true
-        backLeadingToView.isActive = true
+        backLeadingToToggle.isActive = true
+
+        let urlLeading = urlContainer.leadingAnchor.constraint(equalTo: forwardButton.trailingAnchor, constant: 12)
+        urlLeading.priority = highPriority
+        let urlTrailing = urlContainer.trailingAnchor.constraint(equalTo: reloadButton.leadingAnchor, constant: -12)
+        urlTrailing.priority = highPriority
+
+        let moreTrailing = moreButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8)
+        moreTrailing.priority = highPriority
+
+        // Helper to create a constraint at high (non-required) priority
+        func highPri(_ c: NSLayoutConstraint) -> NSLayoutConstraint {
+            c.priority = highPriority
+            return c
+        }
+
+        toggleLeadingNormal = sidebarToggleButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8)
+        toggleLeadingNormal.priority = highPriority
+        toggleLeadingCollapsed = sidebarToggleButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 90)
+        toggleLeadingCollapsed.priority = highPriority
+        toggleLeadingNormal.isActive = true
 
         NSLayoutConstraint.activate([
-            sidebarToggleButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 90),
             sidebarToggleButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             sidebarToggleButton.heightAnchor.constraint(equalToConstant: 28),
 
             backButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            backButton.widthAnchor.constraint(equalToConstant: 28),
+            highPri(backButton.widthAnchor.constraint(equalToConstant: 28)),
             backButton.heightAnchor.constraint(equalToConstant: 28),
 
-            forwardButton.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 4),
+            highPri(forwardButton.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 4)),
             forwardButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            forwardButton.widthAnchor.constraint(equalToConstant: 28),
+            highPri(forwardButton.widthAnchor.constraint(equalToConstant: 28)),
             forwardButton.heightAnchor.constraint(equalToConstant: 28),
 
-            urlContainer.leadingAnchor.constraint(equalTo: forwardButton.trailingAnchor, constant: 12),
-            urlContainer.trailingAnchor.constraint(equalTo: reloadButton.leadingAnchor, constant: -12),
+            urlLeading,
+            urlTrailing,
             urlContainer.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             urlContainer.heightAnchor.constraint(equalToConstant: Layout.urlBarHeight),
 
-            lockIcon.leadingAnchor.constraint(equalTo: urlContainer.leadingAnchor, constant: 14),
+            highPri(lockIcon.leadingAnchor.constraint(equalTo: urlContainer.leadingAnchor, constant: 14)),
             lockIcon.centerYAnchor.constraint(equalTo: urlContainer.centerYAnchor),
-            lockIcon.widthAnchor.constraint(equalToConstant: 14),
+            highPri(lockIcon.widthAnchor.constraint(equalToConstant: 14)),
             lockIcon.heightAnchor.constraint(equalToConstant: 14),
 
-            urlField.leadingAnchor.constraint(equalTo: lockIcon.trailingAnchor, constant: 6),
-            urlField.trailingAnchor.constraint(equalTo: urlContainer.trailingAnchor, constant: -14),
+            highPri(urlField.leadingAnchor.constraint(equalTo: lockIcon.trailingAnchor, constant: 6)),
+            highPri(urlField.trailingAnchor.constraint(equalTo: urlContainer.trailingAnchor, constant: -14)),
             urlField.centerYAnchor.constraint(equalTo: urlContainer.centerYAnchor),
 
-            moreButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
+            moreTrailing,
             moreButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            moreButton.widthAnchor.constraint(equalToConstant: 28),
+            highPri(moreButton.widthAnchor.constraint(equalToConstant: 28)),
             moreButton.heightAnchor.constraint(equalToConstant: 28),
 
-            shareButton.trailingAnchor.constraint(equalTo: moreButton.leadingAnchor, constant: -4),
+            highPri(shareButton.trailingAnchor.constraint(equalTo: moreButton.leadingAnchor, constant: -12)),
             shareButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            shareButton.widthAnchor.constraint(equalToConstant: 28),
+            highPri(shareButton.widthAnchor.constraint(equalToConstant: 28)),
             shareButton.heightAnchor.constraint(equalToConstant: 28),
 
-            reloadButton.trailingAnchor.constraint(equalTo: shareButton.leadingAnchor, constant: -4),
+            highPri(reloadButton.trailingAnchor.constraint(equalTo: shareButton.leadingAnchor, constant: -12)),
             reloadButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            reloadButton.widthAnchor.constraint(equalToConstant: 28),
+            highPri(reloadButton.widthAnchor.constraint(equalToConstant: 28)),
             reloadButton.heightAnchor.constraint(equalToConstant: 28),
+        ])
+
+        // Progress bar — thin line at the very bottom of the toolbar
+        progressBar.wantsLayer = true
+        progressBar.layer?.backgroundColor = Colors.accentPrimary.cgColor
+        progressBar.translatesAutoresizingMaskIntoConstraints = false
+        progressBar.isHidden = true
+        view.addSubview(progressBar)
+
+        progressWidthConstraint = progressBar.widthAnchor.constraint(equalToConstant: 0)
+        NSLayoutConstraint.activate([
+            progressBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+            progressBar.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -2),
+            progressBar.heightAnchor.constraint(equalToConstant: 2),
+            progressWidthConstraint,
         ])
     }
 
@@ -159,6 +219,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
             urlField.stringValue = ""
             backButton.isEnabled = false
             forwardButton.isEnabled = false
+            updateProgress(0, isLoading: false)
             return
         }
         // Don't overwrite while the user is actively editing the URL field
@@ -167,6 +228,37 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         }
         backButton.isEnabled = tab.canGoBack
         forwardButton.isEnabled = tab.canGoForward
+        updateProgress(tab.estimatedProgress, isLoading: tab.isLoading)
+    }
+
+    func updateProgress(_ progress: Double, isLoading: Bool) {
+        let barPadding: CGFloat = 16   // 8 leading + 8 trailing
+        let maxBarWidth = view.bounds.width - barPadding
+        guard maxBarWidth > 0 else {
+            pendingProgress = (progress, isLoading)
+            return
+        }
+
+        if !isLoading || progress >= 1.0 {
+            if !progressBar.isHidden {
+                NSAnimationContext.runAnimationGroup({ ctx in
+                    ctx.duration = 0.2
+                    progressWidthConstraint.animator().constant = maxBarWidth
+                }, completionHandler: { [weak self] in
+                    self?.progressBar.isHidden = true
+                    self?.progressWidthConstraint.constant = 0
+                })
+            }
+            return
+        }
+
+        progressBar.isHidden = false
+        let targetWidth = maxBarWidth * CGFloat(progress)
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.25
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            progressWidthConstraint.animator().constant = targetWidth
+        }
     }
 
     // MARK: - Actions
@@ -195,19 +287,16 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
     }
 
     @objc private func showMore() {
-        // Placeholder for more menu
+        onToggleAddressBar?()
     }
 
     func setSidebarCollapsed(_ collapsed: Bool) {
-        sidebarToggleButton.isHidden = !collapsed
         if collapsed {
-            sidebarToggleWidthConstraint.constant = 28
-            backLeadingToView.isActive = false
-            backLeadingToToggle.isActive = true
+            toggleLeadingNormal.isActive = false
+            toggleLeadingCollapsed.isActive = true
         } else {
-            sidebarToggleWidthConstraint.constant = 0
-            backLeadingToToggle.isActive = false
-            backLeadingToView.isActive = true
+            toggleLeadingCollapsed.isActive = false
+            toggleLeadingNormal.isActive = true
         }
         view.layoutSubtreeIfNeeded()
     }

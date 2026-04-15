@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class HistoryEntry {
+    var id: UUID = UUID()
     var url: String
     var title: String
     var timestamp: Date

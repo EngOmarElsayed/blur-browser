@@ -1,0 +1,15 @@
+{
+  "originHash" : "5144a5f9f3b25d562bcb33e3bea53528f2984b2d1109ec9f6fd19b2eae18a9db",
+  "pins" : [
+    {
+      "identity" : "asyncimage",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/EngOmarElsayed/AsyncImage",
+      "state" : {
+        "revision" : "214a25decf1e52d0782eb3556f7d9f0f2c43033a",
+        "version" : "1.3.0"
+      }
+    }
+  ],
+  "version" : 3
+}
