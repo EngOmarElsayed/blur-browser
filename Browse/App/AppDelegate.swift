@@ -33,6 +33,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return .terminateNow
     }
 
+    // MARK: - Open URLs from external apps
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        // Ensure we have a window
+        if windowController == nil {
+            openNewWindow()
+        }
+        guard let wc = windowController else { return }
+
+        for url in urls {
+            wc.tabManager.addNewTab(url: url)
+        }
+
+        wc.window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     @objc func openSettings(_ sender: Any?) {
         SettingsWindowController.shared.showSettings()
     }
