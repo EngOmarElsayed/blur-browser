@@ -92,6 +92,8 @@ final class BrowserTab: Identifiable {
     private static func makeFilterConfiguration() -> WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        config.preferences.setValue(true, forKey: "fullScreenEnabled")
+        config.preferences.isElementFullscreenEnabled = true
 
         // Early hide — documentStart, all frames
         if let earlyHideURL = Bundle.main.url(forResource: "content-filter", withExtension: "js"),

@@ -240,6 +240,27 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
         return nil
     }
 
+    // MARK: - File Upload Panel
+
+    func webView(
+        _ webView: WKWebView,
+        runOpenPanelWith parameters: WKOpenPanelParameters,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor @Sendable ([URL]?) -> Void
+    ) {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = parameters.allowsDirectories
+        panel.begin { response in
+            if response == .OK {
+                completionHandler(panel.urls)
+            } else {
+                completionHandler(nil)
+            }
+        }
+    }
+
     // MARK: - Media Capture Permission (Camera / Microphone)
     func webView(
         _ webView: WKWebView,

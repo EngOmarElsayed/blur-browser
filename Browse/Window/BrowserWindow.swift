@@ -15,6 +15,9 @@ final class BrowserWindow: NSWindow {
         isReleasedWhenClosed = false
         backgroundColor = Colors.chromeBg
 
+        // Allow fullscreen for both window and element (video) fullscreen
+        collectionBehavior = [.fullScreenPrimary]
+
         // Explicitly set appearance so macOS renders traffic lights with correct colors
         appearance = NSAppearance(named: .aqua)
 
