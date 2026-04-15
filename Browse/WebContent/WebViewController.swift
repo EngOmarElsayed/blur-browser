@@ -207,6 +207,62 @@ final class WebViewController: NSViewController {
         }
     }
 
+    // MARK: - File Upload Panel
+
+    private var dimOverlay: NSView?
+
+    func showFileUploadPanel(
+        allowsMultipleSelection: Bool,
+        allowsDirectories: Bool,
+        completionHandler: @escaping ([URL]?) -> Void
+    ) {
+        // Add dim overlay
+        let overlay = NSView(frame: view.bounds)
+        overlay.wantsLayer = true
+        overlay.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.4).cgColor
+        overlay.autoresizingMask = [.width, .height]
+        view.addSubview(overlay)
+        dimOverlay = overlay
+
+        // Fade in
+        overlay.alphaValue = 0
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            overlay.animator().alphaValue = 1
+        }
+
+        // Show open panel as sheet on the browser window
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = allowsMultipleSelection
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = allowsDirectories
+
+        guard let window = view.window else {
+            // Fallback: show standalone
+            panel.begin { [weak self] response in
+                self?.dismissDimOverlay()
+                completionHandler(response == .OK ? panel.urls : nil)
+            }
+            return
+        }
+
+        panel.beginSheetModal(for: window) { [weak self] response in
+            self?.dismissDimOverlay()
+            completionHandler(response == .OK ? panel.urls : nil)
+        }
+    }
+
+    private func dismissDimOverlay() {
+        guard let overlay = dimOverlay else { return }
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.2
+            overlay.animator().alphaValue = 0
+        }, completionHandler: {
+            overlay.removeFromSuperview()
+        })
+        dimOverlay = nil
+    }
+
     func onNavigationFinished() {
         guard let tab = tabManager.selectedTab, let url = tab.url else { return }
         historyStore?.addEntry(url: url, title: tab.title)

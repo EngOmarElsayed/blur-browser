@@ -248,17 +248,11 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
         initiatedByFrame frame: WKFrameInfo,
         completionHandler: @escaping @MainActor @Sendable ([URL]?) -> Void
     ) {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = parameters.allowsDirectories
-        panel.begin { response in
-            if response == .OK {
-                completionHandler(panel.urls)
-            } else {
-                completionHandler(nil)
-            }
-        }
+        self.viewController?.showFileUploadPanel(
+            allowsMultipleSelection: parameters.allowsMultipleSelection,
+            allowsDirectories: parameters.allowsDirectories,
+            completionHandler: completionHandler
+        )
     }
 
     // MARK: - Media Capture Permission (Camera / Microphone)
