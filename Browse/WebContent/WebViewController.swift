@@ -45,8 +45,9 @@ final class WebViewController: NSViewController {
     }
 
     func displayTab(_ tab: BrowserTab?) {
-        // Unregister message handlers from the old web view
+        // Exit element fullscreen on the old web view before switching
         if let oldWV = currentWebView {
+            oldWV.evaluateJavaScript("if (document.fullscreenElement) { document.exitFullscreen(); }")
             coordinator.unregisterMessageHandlers(on: oldWV)
         }
 
