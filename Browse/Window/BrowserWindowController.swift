@@ -145,6 +145,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         splitVC.toggleHistoryMode()
     }
 
+    func focusMode() {
+        splitVC.focusMode()
+    }
+
     func toggleAddressBar() {
         splitVC.toggleAddressBar()
     }

@@ -130,6 +130,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         wc.toggleHistory()
     }
 
+    @objc func focusMode(_ sender: Any?) {
+        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
+        wc.focusMode()
+    }
+
     @objc func toggleAddressBar(_ sender: Any?) {
         guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
         wc.toggleAddressBar()

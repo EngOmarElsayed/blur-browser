@@ -58,7 +58,7 @@ final class MainSplitViewController: NSViewController {
             self?.toggleSidebar()
         }
         addressBar.onToggleAddressBar = { [weak self] in
-            self?.toggleAddressBar()
+            self?.focusMode()
         }
         toolbarView = makeToolbarView()
         contentContainerView.addSubview(toolbarView)
@@ -290,7 +290,6 @@ final class MainSplitViewController: NSViewController {
     }
 
     func toggleAddressBar() {
-        // If we're dismissing a temporary reveal, just clear the temp state
         if isAddressBarTemporarilyShown {
             isAddressBarTemporarilyShown = false
         }
@@ -300,6 +299,25 @@ final class MainSplitViewController: NSViewController {
             ctx.duration = 0.2
             ctx.allowsImplicitAnimation = true
             isAddressBarHidden.toggle()
+            layoutSubviews()
+        }
+    }
+
+    func focusMode() {
+        // If we're dismissing a temporary reveal, just clear the temp state
+        if isAddressBarTemporarilyShown {
+            isAddressBarTemporarilyShown = false
+        }
+        hideTimer?.invalidate()
+        hideTimer = nil
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.allowsImplicitAnimation = true
+            isAddressBarHidden = true
+
+            isSidebarCollapsed = true
+            addressBar.setSidebarCollapsed(isSidebarCollapsed)
+
             layoutSubviews()
         }
     }

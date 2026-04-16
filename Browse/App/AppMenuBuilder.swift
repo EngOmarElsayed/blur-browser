@@ -58,7 +58,8 @@ enum AppMenuBuilder {
         // View menu
         let viewMenu = NSMenu(title: "View")
         addItem(to: viewMenu, title: "Toggle Sidebar", action: #selector(AppDelegate.toggleSidebar(_:)), key: "\\", target: delegate)
-        addItem(to: viewMenu, title: "Focus Mode", action: #selector(AppDelegate.toggleAddressBar(_:)), key: "F", modifiers: [.command, .shift], target: delegate)
+        addItem(to: viewMenu, title: "Focus Mode", action: #selector(AppDelegate.focusMode(_:)), key: "F", modifiers: [.command, .shift], target: delegate)
+        addItem(to: viewMenu, title: "Toggle Address Bar", action: #selector(AppDelegate.toggleAddressBar(_:)), key: "a", modifiers: [.command, .shift], target: delegate)
         viewMenu.addItem(.separator())
         addItem(to: viewMenu, title: "Reload", action: #selector(AppDelegate.reloadPage(_:)), key: "r", target: delegate)
         addItem(to: viewMenu, title: "Hard Reload", action: #selector(AppDelegate.hardReload(_:)), key: "R", modifiers: [.command, .shift], target: delegate)
