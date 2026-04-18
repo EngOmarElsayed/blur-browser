@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import WebKit
 
 @MainActor
@@ -11,6 +12,7 @@ final class WebViewController: NSViewController {
     private var findController: FindInPageController?
     private var historyStore: HistoryStore?
     private var quickSearchOverlay: QuickSearchOverlay?
+    private var errorPageHosting: NSHostingController<ErrorPageView>?
 
     var onNewTabRequested: ((URL) -> Void)?
 
@@ -45,6 +47,10 @@ final class WebViewController: NSViewController {
     }
 
     func displayTab(_ tab: BrowserTab?) {
+        // Clear any error page from previous tab
+        errorPageHosting?.view.removeFromSuperview()
+        errorPageHosting = nil
+
         // Exit element fullscreen on the old web view before switching
         if let oldWV = currentWebView {
             oldWV.evaluateJavaScript("if (document.fullscreenElement) { document.exitFullscreen(); }")
@@ -82,14 +88,23 @@ final class WebViewController: NSViewController {
             view.addSubview(fb)
             layoutFindBar()
         }
+
+        // If the tab has a saved error, show the error page
+        if let error = tab.browsingError {
+            showErrorPage(error)
+        }
     }
 
     private func layoutCurrentWebView() {
         guard let wv = currentWebView else { return }
         wv.frame = view.bounds
         cornerMaskView.frame = view.bounds
-        // Keep corner mask above web view
-        view.addSubview(cornerMaskView, positioned: .above, relativeTo: wv)
+        // Keep error page (if any) sized to fill the content area
+        errorPageHosting?.view.frame = view.bounds
+        // Ensure corner mask is always the topmost subview so rounded corners
+        // stay visible even when the error page overlay is present.
+        cornerMaskView.removeFromSuperview()
+        view.addSubview(cornerMaskView)
     }
 
     // MARK: - Navigation
@@ -98,6 +113,15 @@ final class WebViewController: NSViewController {
     func goForward() { currentWebView?.goForward() }
 
     func reload(bypassCache: Bool) {
+        // If the last navigation failed provisionally, the webView's last committed
+        // URL differs from the tab's intended URL. In that case, load the stored
+        // URL explicitly instead of calling reload().
+        if let tab = tabManager.selectedTab,
+           let url = tab.url,
+           currentWebView?.url != url {
+            currentWebView?.load(URLRequest(url: url))
+            return
+        }
         if bypassCache {
             currentWebView?.reloadFromOrigin()
         } else {
@@ -267,6 +291,59 @@ final class WebViewController: NSViewController {
     func onNavigationFinished() {
         guard let tab = tabManager.selectedTab, let url = tab.url else { return }
         historyStore?.addEntry(url: url, title: tab.title)
+    }
+
+    // MARK: - Error Page
+
+    func showErrorPage(_ error: BrowsingError) {
+        // Store error on the current tab
+        tabManager.selectedTab?.browsingError = error
+
+        // Remove any existing error overlay view (without clearing stored state)
+        errorPageHosting?.view.removeFromSuperview()
+        errorPageHosting = nil
+
+        let errorView = ErrorPageView(error: error) { [weak self] in
+            // Load the tab's stored (intended) URL rather than calling reload(),
+            // because reload() would navigate to the last *committed* URL, not
+            // the one that failed provisionally.
+            guard let self else { return }
+            if let url = self.tabManager.selectedTab?.url {
+                self.currentWebView?.load(URLRequest(url: url))
+            } else {
+                self.currentWebView?.reload()
+            }
+        }
+
+        let hosting = NSHostingController(rootView: errorView)
+        hosting.view.frame = view.bounds
+        hosting.view.autoresizingMask = [.width, .height]
+        hosting.view.alphaValue = 0
+
+        view.addSubview(hosting.view, positioned: .below, relativeTo: cornerMaskView)
+        errorPageHosting = hosting
+
+        // Animate in
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.25
+            hosting.view.animator().alphaValue = 1
+        }
+    }
+
+    func clearErrorPage() {
+        tabManager.selectedTab?.browsingError = nil
+        guard let hosting = errorPageHosting else { return }
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.15
+            hosting.view.animator().alphaValue = 0
+        }, completionHandler: {
+            DispatchQueue.main.async { hosting.view.removeFromSuperview() }
+        })
+        errorPageHosting = nil
+    }
+
+    func tabForWebView(_ webView: WKWebView) -> BrowserTab? {
+        tabManager.tabs.first(where: { $0.webView === webView })
     }
 
     func openURLInNewTab(_ url: URL) {

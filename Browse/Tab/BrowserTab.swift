@@ -13,6 +13,12 @@ final class BrowserTab: Identifiable {
     var estimatedProgress: Double = 0
     var faviconImage: NSImage?
     var isPinned: Bool = false
+    var browsingError: BrowsingError?
+
+    /// True while a provisional navigation is in flight (before commit or failure).
+    /// While true, KVO updates to `url` are ignored so the intended URL stays visible
+    /// in the address bar even if WKWebView reverts its internal URL on failure.
+    var isProvisionalNavigationInFlight: Bool = false
 
     let webView: WKWebView
     private var observations: [NSKeyValueObservation] = []
@@ -55,7 +61,17 @@ final class BrowserTab: Identifiable {
         )
         observations.append(
             wv.observe(\.url) { [weak self] wv, _ in
-                Task { @MainActor in self?.url = wv.url }
+                // Don't clear the stored URL when WKWebView's URL becomes nil
+                // (happens on failed provisional navigations) — keep the intended
+                // URL visible in the address bar so the user knows what they tried to load.
+                Task { @MainActor in
+                    guard let self, let newURL = wv.url else { return }
+                    // While a provisional navigation is in flight, WKWebView may
+                    // revert its url to the last committed URL on failure. Ignore
+                    // those reverts so the intended URL stays visible.
+                    if self.isProvisionalNavigationInFlight { return }
+                    self.url = newURL
+                }
             }
         )
         observations.append(

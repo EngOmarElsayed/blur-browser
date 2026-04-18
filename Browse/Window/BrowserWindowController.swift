@@ -23,10 +23,13 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     private func setup() {
         window?.delegate = self
 
-        // Restore previous session if enabled
+        // Restore unpinned tabs from JSON session if enabled
         if SettingsStore.shared.restoreTabsOnLaunch {
             TabSessionStore.restore(into: tabManager)
         }
+
+        // Restore pinned tabs from SwiftData (always, after JSON restore so they aren't wiped)
+        tabManager.restorePinnedTabs()
 
         splitVC = MainSplitViewController(tabManager: tabManager, historyStore: historyStore)
         splitVC.webViewController.onNewTabRequested = { [weak self] url in
@@ -41,6 +44,25 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
 
         window?.contentViewController = splitVC
 
+        // Prevent the address bar from auto-focusing on launch.
+        // Setting initialFirstResponder to the plain content view means AppKit
+        // won't walk the key view loop and land on the URL text field when the
+        // window becomes key.
+        window?.initialFirstResponder = splitVC.view
+
+        // Defensive: clear focus once the window actually becomes key.
+        // Use a weak ref so we don't leak.
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: window,
+            queue: .main
+        ) { [weak window, weak splitVC] _ in
+            guard let window, let splitView = splitVC?.view else { return }
+            // If the first responder is a text field's field editor, clear it
+            if window.firstResponder is NSText {
+                window.makeFirstResponder(splitView)
+            }
+        }
 
         // Observe selected tab changes, URL changes, and loading progress
         observationTask = Task { [weak self] in

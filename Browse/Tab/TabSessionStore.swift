@@ -20,10 +20,20 @@ enum TabSessionStore {
     }
 
     static func save(tabManager: TabManager) {
-        let tabs = tabManager.tabs.map {
+        // Only save unpinned tabs — pinned tabs are persisted via SwiftData
+        let unpinnedTabs = tabManager.tabs.filter { !$0.isPinned }
+        let tabs = unpinnedTabs.map {
             TabSession(url: $0.url?.absoluteString ?? "", title: $0.title)
         }
-        let selectedIndex = tabManager.selectedIndex ?? 0
+
+        // Find selected index among unpinned tabs
+        let selectedIndex: Int
+        if let selectedTab = tabManager.selectedTab, !selectedTab.isPinned {
+            selectedIndex = unpinnedTabs.firstIndex(of: selectedTab).map { $0 } ?? 0
+        } else {
+            selectedIndex = 0
+        }
+
         let session = SessionData(tabs: tabs, selectedIndex: selectedIndex)
 
         do {

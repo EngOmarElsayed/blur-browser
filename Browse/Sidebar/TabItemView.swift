@@ -6,16 +6,12 @@ struct TabItemView: View {
     let isHovered: Bool
     let onSelect: () -> Void
     let onClose: () -> Void
+    let onPin: () -> Void
     let onDuplicate: () -> Void
     let onCloseOthers: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
-            // Active indicator bar
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(isSelected ? Color(nsColor: Colors.accentPrimary) : Color.clear)
-                .frame(width: 3, height: 20)
-
             // Favicon
             faviconView
 
@@ -30,6 +26,17 @@ struct TabItemView: View {
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            if isHovered {
+                Button(action: onPin) {
+                    Image(systemName: "pin")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                        .rotationEffect(.degrees(45))
+                }
+                .buttonStyle(.plain)
+                .frame(width: 16, height: 16)
+            }
+
             if isHovered || isSelected {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
@@ -40,8 +47,8 @@ struct TabItemView: View {
                 .frame(width: 16, height: 16)
             }
         }
-        .padding(.vertical, 7)
-        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(isSelected
@@ -54,7 +61,10 @@ struct TabItemView: View {
         .padding(.horizontal, 6)
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
+        .draggable(tab.id.uuidString)
         .contextMenu {
+            Button("Pin Tab", action: onPin)
+            Divider()
             Button("Close Tab", action: onClose)
             Button("Close Other Tabs", action: onCloseOthers)
             Divider()

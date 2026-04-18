@@ -190,24 +190,48 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
     }
 
     // MARK: - WKNavigationDelegate
-
-    nonisolated func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        viewController?.tabForWebView(webView)?.isProvisionalNavigationInFlight = true
     }
 
-    nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        Task { @MainActor in
-            guard let vc = viewController else { return }
-            vc.onNavigationFinished()
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        viewController?.tabForWebView(webView)?.isProvisionalNavigationInFlight = false
+    }
 
-            // Re-inject image scanner after navigation completes
-            if let scannerURL = Bundle.main.url(forResource: "image-scanner", withExtension: "js"),
-               let scannerSource = try? String(contentsOf: scannerURL) {
-                webView.evaluateJavaScript(scannerSource, completionHandler: nil)
-            }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        viewController?.tabForWebView(webView)?.isProvisionalNavigationInFlight = false
+        guard let vc = viewController else { return }
+        vc.clearErrorPage()
+        vc.onNavigationFinished()
+
+        // Re-inject image scanner after navigation completes
+        if let scannerURL = Bundle.main.url(forResource: "image-scanner", withExtension: "js"),
+           let scannerSource = try? String(contentsOf: scannerURL) {
+            webView.evaluateJavaScript(scannerSource, completionHandler: nil)
         }
     }
 
-    nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        viewController?.tabForWebView(webView)?.isProvisionalNavigationInFlight = false
+        let nsError = error as NSError
+        if let browsingError = BrowsingError.from(nsError) {
+            viewController?.showErrorPage(browsingError)
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        // Keep isProvisionalNavigationInFlight true for the rest of this call
+        // so the KVO that fires as WKWebView reverts its url (to the previous
+        // committed URL) is ignored. Clear the flag on the next runloop tick
+        // after the KVO has fired and been filtered out.
+        let tab = viewController?.tabForWebView(webView)
+        let nsError = error as NSError
+        if let browsingError = BrowsingError.from(nsError) {
+            viewController?.showErrorPage(browsingError)
+        }
+        DispatchQueue.main.async {
+            tab?.isProvisionalNavigationInFlight = false
+        }
     }
 
     func webView(
@@ -223,6 +247,16 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
             decisionHandler(.cancel)
             return
         }
+
+        // Update tab.url as soon as a main-frame navigation begins, so the
+        // address bar reflects the target URL immediately and retry works
+        // even when the navigation fails provisionally.
+        if navigationAction.targetFrame?.isMainFrame == true,
+           let url = navigationAction.request.url,
+           let tab = viewController?.tabForWebView(webView) {
+            tab.url = url
+        }
+
         decisionHandler(.allow)
     }
 
