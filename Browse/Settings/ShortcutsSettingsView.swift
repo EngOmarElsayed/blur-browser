@@ -22,11 +22,13 @@ struct ShortcutsSettingsView: View {
         ShortcutEntry(action: "Copy URL", shortcut: "⇧⌘C"),
         // View
         ShortcutEntry(action: "Toggle Sidebar", shortcut: "⌘\\"),
+        ShortcutEntry(action: "Toggle Sidebar (Alt)", shortcut: "⇧⌘\\"),
         ShortcutEntry(action: "Focus Mode", shortcut: "⇧⌘F"),
         ShortcutEntry(action: "Toggle Address Bar", shortcut: "⇧⌘A"),
         ShortcutEntry(action: "Reload", shortcut: "⌘R"),
         ShortcutEntry(action: "Hard Reload", shortcut: "⇧⌘R"),
         ShortcutEntry(action: "Web Inspector", shortcut: "⌥⌘C"),
+        ShortcutEntry(action: "Easy Read", shortcut: "⇧⌘E"),
         // History
         ShortcutEntry(action: "Show History", shortcut: "⌘Y"),
         ShortcutEntry(action: "Back", shortcut: "⌘["),

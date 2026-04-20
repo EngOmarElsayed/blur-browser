@@ -9,6 +9,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
     private let forwardButton = NSButton()
     private let urlField = NSTextField()
     private let reloadButton = NSButton()
+    private let readerButton = NSButton()
     private let shareButton = NSButton()
     private let moreButton = NSButton()
     private let progressBar = NSView()
@@ -27,6 +28,9 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
 
     /// Called when the more button is tapped (toggles address bar visibility)
     var onToggleAddressBar: (() -> Void)?
+
+    /// Called when the reader-mode button is tapped
+    var onToggleReaderMode: (() -> Void)?
 
     init(tabManager: TabManager) {
         self.tabManager = tabManager
@@ -90,13 +94,16 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         configureNavButton(shareButton, symbol: "square.and.arrow.up", action: #selector(sharePage))
         configureNavButton(moreButton, symbol: "circle.circle", action: #selector(showMore))
 
+        // Reader button — floating pill on the top-trailing edge, hidden by default
+        configureReaderButton()
+
         // Layout with AutoLayout
-        for v in [sidebarToggleButton, backButton, forwardButton, urlContainer, reloadButton, shareButton, moreButton] {
+        for v in [sidebarToggleButton, backButton, forwardButton, urlContainer, reloadButton, shareButton, moreButton, readerButton] {
             v.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(v)
         }
 
-        for v in [lockIcon, urlField] as [NSView] {
+        for v in [lockIcon, urlField, readerButton] as [NSView] {
             v.translatesAutoresizingMaskIntoConstraints = false
             urlContainer.addSubview(v)
         }
@@ -177,6 +184,14 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
             highPri(shareButton.widthAnchor.constraint(equalToConstant: 28)),
             shareButton.heightAnchor.constraint(equalToConstant: 28),
 
+            // Reader button — floating pill pinned to top-trailing corner
+            // Reader pill sits on top of the URL bar, aligned to its trailing edge.
+            // Anchored to the toolbar's top so it stays inside the toolbar's bounds.
+            highPri(readerButton.trailingAnchor.constraint(equalTo: urlContainer.trailingAnchor, constant: -10)),
+            readerButton.centerYAnchor.constraint(equalTo: urlContainer.centerYAnchor),
+            highPri(readerButton.widthAnchor.constraint(equalToConstant: 14)),
+            readerButton.heightAnchor.constraint(equalToConstant: 14),
+
             highPri(reloadButton.trailingAnchor.constraint(equalTo: shareButton.leadingAnchor, constant: -12)),
             reloadButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             highPri(reloadButton.widthAnchor.constraint(equalToConstant: 28)),
@@ -207,6 +222,32 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         button.target = self
         button.action = action
         button.setContentHuggingPriority(.required, for: .horizontal)
+    }
+
+    private func configureReaderButton() {
+        readerButton.image = NSImage(
+            systemSymbolName: "doc.plaintext",
+            accessibilityDescription: "Reader Mode"
+        )
+        readerButton.imageScaling = .scaleProportionallyDown
+        readerButton.imagePosition = .imageOnly
+        readerButton.isBordered = false
+        readerButton.bezelStyle = .accessoryBarAction
+        readerButton.contentTintColor = Colors.foregroundSecondary
+        readerButton.target = self
+        readerButton.action = #selector(toggleReaderMode)
+        readerButton.wantsLayer = true
+        readerButton.layer?.shadowColor = NSColor.black.withAlphaComponent(0.12).cgColor
+        readerButton.layer?.shadowOffset = CGSize(width: 0, height: -1)
+        readerButton.layer?.shadowRadius = 3
+        readerButton.layer?.shadowOpacity = 1
+        readerButton.isHidden = true
+    }
+
+    /// Show or hide the reader-mode pill button based on whether the current page
+    /// has content that can be parsed as an article.
+    func setReaderAvailable(_ available: Bool) {
+        readerButton.isHidden = !available
     }
 
     func focusAndSelectAll() {
@@ -288,6 +329,10 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
 
     @objc private func showMore() {
         onToggleAddressBar?()
+    }
+
+    @objc private func toggleReaderMode() {
+        onToggleReaderMode?()
     }
 
     func setSidebarCollapsed(_ collapsed: Bool) {

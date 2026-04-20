@@ -69,7 +69,13 @@ final class ContentFilterService {
 
         let neutralConfidence = results.first(where: { $0.label == "neutral" })?.confidence ?? 0
         let drawingsConfidence = results.first(where: { $0.label == "drawings" })?.confidence ?? 0
-        return neutralConfidence < 0.5 && drawingsConfidence < 0.5
+
+        let pornConfidence = results.first(where: { $0.label == "porn" })?.confidence ?? 0
+        let hentaiConfidence = results.first(where: { $0.label == "hentai" })?.confidence ?? 0
+        let sexyConfidence = results.first(where: { $0.label == "sexy" })?.confidence ?? 0
+//        let compaination = pornConfidence + sexyConfidence + hentaiConfidence
+
+        return (neutralConfidence < 0.5 && drawingsConfidence < 0.5) && (pornConfidence >= 0.5 || hentaiConfidence >= 0.5 || sexyConfidence >= 0.5)
     }
 
     /// Format all results into a readable string for logging.

@@ -16,6 +16,9 @@ final class WebViewController: NSViewController {
 
     var onNewTabRequested: ((URL) -> Void)?
 
+    /// Called when a finished page has been checked for reader-mode availability.
+    var onReaderAvailabilityChanged: ((Bool) -> Void)?
+
     init(tabManager: TabManager) {
         self.tabManager = tabManager
         super.init(nibName: nil, bundle: nil)
@@ -47,6 +50,9 @@ final class WebViewController: NSViewController {
     }
 
     func displayTab(_ tab: BrowserTab?) {
+        // Reset reader availability for the new tab (we'll re-check on navigation finish)
+        onReaderAvailabilityChanged?(false)
+
         // Clear any error page from previous tab
         errorPageHosting?.view.removeFromSuperview()
         errorPageHosting = nil
@@ -92,6 +98,19 @@ final class WebViewController: NSViewController {
         // If the tab has a saved error, show the error page
         if let error = tab.browsingError {
             showErrorPage(error)
+        }
+
+        // Re-check reader availability for this tab. If it's already loaded,
+        // `onNavigationFinished` won't fire again, so we need to check explicitly
+        // on tab switch.
+        if !tab.isLoading, tab.url != nil {
+            Task { [weak self] in
+                guard let self, let currentWebView = self.currentWebView else { return }
+                let available = await ReaderModeService.isReaderable(webView: currentWebView)
+                // Only apply if we're still on the same tab
+                guard self.currentWebView === tab.webView else { return }
+                self.onReaderAvailabilityChanged?(available)
+            }
         }
     }
 
@@ -291,6 +310,15 @@ final class WebViewController: NSViewController {
     func onNavigationFinished() {
         guard let tab = tabManager.selectedTab, let url = tab.url else { return }
         historyStore?.addEntry(url: url, title: tab.title)
+
+        // Check if this page can be displayed in reader mode
+        Task { [weak self] in
+            guard let self, let currentWebView = self.currentWebView else { return }
+            let available = await ReaderModeService.isReaderable(webView: currentWebView)
+            // Only apply the result if we're still on the same tab/page
+            guard self.currentWebView === tab.webView else { return }
+            self.onReaderAvailabilityChanged?(available)
+        }
     }
 
     // MARK: - Error Page

@@ -58,6 +58,7 @@ enum AppMenuBuilder {
         // View menu
         let viewMenu = NSMenu(title: "View")
         addItem(to: viewMenu, title: "Toggle Sidebar", action: #selector(AppDelegate.toggleSidebar(_:)), key: "\\", target: delegate)
+        addItem(to: viewMenu, title: "Toggle Sidebar (Alt)", action: #selector(AppDelegate.toggleSidebar(_:)), key: "\\", modifiers: [.command, .shift], target: delegate)
         addItem(to: viewMenu, title: "Focus Mode", action: #selector(AppDelegate.focusMode(_:)), key: "F", modifiers: [.command, .shift], target: delegate)
         addItem(to: viewMenu, title: "Toggle Address Bar", action: #selector(AppDelegate.toggleAddressBar(_:)), key: "a", modifiers: [.command, .shift], target: delegate)
         viewMenu.addItem(.separator())
@@ -65,6 +66,7 @@ enum AppMenuBuilder {
         addItem(to: viewMenu, title: "Hard Reload", action: #selector(AppDelegate.hardReload(_:)), key: "R", modifiers: [.command, .shift], target: delegate)
         viewMenu.addItem(.separator())
         addItem(to: viewMenu, title: "Web Inspector", action: #selector(AppDelegate.toggleInspector(_:)), key: "c", modifiers: [.command, .option], target: delegate)
+        addItem(to: viewMenu, title: "Easy Read", action: #selector(AppDelegate.toggleEasyRead(_:)), key: "E", modifiers: [.command, .shift], target: delegate)
         let viewMenuItem = NSMenuItem()
         viewMenuItem.submenu = viewMenu
         mainMenu.addItem(viewMenuItem)

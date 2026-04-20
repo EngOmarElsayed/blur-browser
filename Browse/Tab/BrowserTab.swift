@@ -105,11 +105,20 @@ final class BrowserTab: Identifiable {
 
     // MARK: - WKWebView Configuration with Content Filter Scripts
 
+    /// Shared process pool for all tabs — lets them share cookies and session
+    /// state within a single run of the app.
+    private static let sharedProcessPool = WKProcessPool()
+
     private static func makeFilterConfiguration() -> WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
         config.preferences.setValue(true, forKey: "fullScreenEnabled")
         config.preferences.isElementFullscreenEnabled = true
+
+        // Share the default (persistent) website data store across all tabs so
+        // cookies, local storage, and session state survive across app launches.
+        config.websiteDataStore = .default()
+        config.processPool = BrowserTab.sharedProcessPool
 
         // Early hide — documentStart, all frames
         if let earlyHideURL = Bundle.main.url(forResource: "content-filter", withExtension: "js"),

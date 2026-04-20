@@ -175,6 +175,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         splitVC.toggleAddressBar()
     }
 
+    func toggleReaderMode() {
+        splitVC.toggleReaderMode()
+    }
+
     func nextTab() {
         tabManager.selectNextTab()
     }

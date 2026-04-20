@@ -26,6 +26,8 @@ final class MainSplitViewController: NSViewController {
     private let sidebarToggleButton = NSButton()
     private let topHoverZone = HoverDetectorView()
     private var hideTimer: Timer?
+    private var readerOverlay: ReaderModeView?
+    private var readerDimView: NSView?
 
     init(tabManager: TabManager, historyStore: HistoryStore) {
         self.tabManager = tabManager
@@ -59,6 +61,12 @@ final class MainSplitViewController: NSViewController {
         }
         addressBar.onToggleAddressBar = { [weak self] in
             self?.focusMode()
+        }
+        addressBar.onToggleReaderMode = { [weak self] in
+            self?.toggleReaderMode()
+        }
+        webViewController.onReaderAvailabilityChanged = { [weak self] available in
+            self?.addressBar.setReaderAvailable(available)
         }
         toolbarView = makeToolbarView()
         contentContainerView.addSubview(toolbarView)
@@ -304,7 +312,7 @@ final class MainSplitViewController: NSViewController {
     }
 
     func focusMode() {
-        // If we're dismissing a temporary reveal, just clear the temp state
+        // If we're dismisp sing a temporary reveal, just clear the temp state
         if isAddressBarTemporarilyShown {
             isAddressBarTemporarilyShown = false
         }
@@ -385,6 +393,92 @@ final class MainSplitViewController: NSViewController {
             isHistoryCollapsed.toggle()
             layoutSubviews()
         }
+    }
+
+    // MARK: - Reader Mode
+
+    func toggleReaderMode() {
+        if readerOverlay != nil {
+            dismissReaderMode()
+        } else {
+            Task { await presentReaderMode() }
+        }
+    }
+
+    private func presentReaderMode() async {
+        guard let webView = tabManager.selectedTab?.webView else { return }
+        guard let article = await ReaderModeService.parseArticle(webView: webView) else {
+            print("[ReaderMode] Failed to parse article for reader mode")
+            NSSound.beep()
+            return
+        }
+
+        // Dim background — black 30% opacity to focus attention on the reader
+        let dim = NSView()
+        dim.wantsLayer = true
+        dim.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.3).cgColor
+        dim.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(dim, positioned: .above, relativeTo: nil)
+        NSLayoutConstraint.activate([
+            dim.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            dim.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            dim.topAnchor.constraint(equalTo: view.topAnchor),
+            dim.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+        readerDimView = dim
+
+        // Dismiss on clicking outside the reader panel
+        let clickRecognizer = NSClickGestureRecognizer(target: self, action: #selector(readerDimClicked))
+        dim.addGestureRecognizer(clickRecognizer)
+
+        let overlay = ReaderModeView(article: article, baseURL: tabManager.selectedTab?.url)
+        overlay.onClose = { [weak self] in
+            self?.dismissReaderMode()
+        }
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(overlay, positioned: .above, relativeTo: dim)
+
+        // Reader panel size — centered in the window, smaller than the whole area.
+        // Change ReaderModeView.panelWidth / panelHeight to resize.
+        NSLayoutConstraint.activate([
+            overlay.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            overlay.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            overlay.widthAnchor.constraint(equalToConstant: ReaderModeView.panelWidth),
+            overlay.heightAnchor.constraint(lessThanOrEqualTo: view.heightAnchor, constant: -40),
+            overlay.heightAnchor.constraint(equalToConstant: ReaderModeView.panelHeight),
+        ])
+
+        // Keep border overlay above the reader so the Arc-style border stays drawn
+        view.addSubview(borderOverlay, positioned: .above, relativeTo: overlay)
+
+        overlay.alphaValue = 0
+        dim.alphaValue = 0
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.2
+            overlay.animator().alphaValue = 1
+            dim.animator().alphaValue = 1
+        }, completionHandler: nil)
+
+        readerOverlay = overlay
+    }
+
+    @objc private func readerDimClicked() {
+        dismissReaderMode()
+    }
+
+    private func dismissReaderMode() {
+        guard let overlay = readerOverlay else { return }
+        let dim = readerDimView
+        readerOverlay = nil
+        readerDimView = nil
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.15
+            overlay.animator().alphaValue = 0
+            dim?.animator().alphaValue = 0
+        }, completionHandler: {
+            overlay.removeFromSuperview()
+            dim?.removeFromSuperview()
+        })
     }
 
     // MARK: - Divider Drag

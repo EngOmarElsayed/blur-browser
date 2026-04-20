@@ -10,8 +10,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ProcessInfo.processInfo.disableSuddenTermination()
 
         AppMenuBuilder.buildMainMenu()
-        openNewWindow()
-        NSApp.activate(ignoringOtherApps: true)
+
+        // Restore persisted cookies BEFORE opening any window so tabs load with
+        // auth cookies already in the data store.
+        Task {
+            await CookieStore.restore()
+            openNewWindow()
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -30,7 +36,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let wc = windowController {
             TabSessionStore.save(tabManager: wc.tabManager)
         }
-        return .terminateNow
+
+        // Persist cookies so login sessions survive app relaunches
+        Task { @MainActor in
+            await CookieStore.save()
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 
     // MARK: - Open URLs from external apps
@@ -143,6 +155,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func toggleInspector(_ sender: Any?) {
         guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
         wc.toggleInspector()
+    }
+
+    @objc func toggleEasyRead(_ sender: Any?) {
+        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
+        wc.toggleReaderMode()
     }
 
     @objc func selectTab1(_ sender: Any?) { selectTab(at: 0) }
