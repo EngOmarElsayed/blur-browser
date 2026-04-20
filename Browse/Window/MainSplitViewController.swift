@@ -402,17 +402,24 @@ final class MainSplitViewController: NSViewController {
     // MARK: - Reader Mode
 
     func toggleReaderMode() {
-        guard let tab = tabManager.selectedTab else { return }
+        Task {
+            guard let tab = tabManager.selectedTab else { return }
+            let isReaderable = await ReaderModeService.isReaderable(webView: tab.webView)
+            guard isReaderable else {
+                NSSound.beep()
+                return
+            }
 
-        if tab.readerArticle != nil {
-            // Reader is active for this tab — dismiss it and clear tab state
-            tab.readerArticle = nil
-            tab.readerParsedForURL = nil
-            unmountReaderOverlay(animated: true)
-            addressBar.setReaderActive(false)
-        } else {
-            // Reader is off — parse and enable
-            Task { await enableReaderMode(on: tab) }
+            if tab.readerArticle != nil {
+                // Reader is active for this tab — dismiss it and clear tab state
+                tab.readerArticle = nil
+                tab.readerParsedForURL = nil
+                unmountReaderOverlay(animated: true)
+                addressBar.setReaderActive(false)
+            } else {
+                // Reader is off — parse and enable
+                await enableReaderMode(on: tab)
+            }
         }
     }
 
