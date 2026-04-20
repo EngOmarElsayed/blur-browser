@@ -15,6 +15,14 @@ final class BrowserTab: Identifiable {
     var isPinned: Bool = false
     var browsingError: BrowsingError?
 
+    /// Cached parsed article when reader mode is active for this tab.
+    /// `nil` means reader mode is off for this tab.
+    var readerArticle: ReaderArticle?
+
+    /// The URL that `readerArticle` was parsed from. Used to invalidate the cache
+    /// when the tab navigates to a different page while reader state is held.
+    var readerParsedForURL: URL?
+
     /// True while a provisional navigation is in flight (before commit or failure).
     /// While true, KVO updates to `url` are ignored so the intended URL stays visible
     /// in the address bar even if WKWebView reverts its internal URL on failure.
@@ -71,6 +79,11 @@ final class BrowserTab: Identifiable {
                     // those reverts so the intended URL stays visible.
                     if self.isProvisionalNavigationInFlight { return }
                     self.url = newURL
+                    // Invalidate cached reader article if the page navigated away
+                    if let parsedURL = self.readerParsedForURL, parsedURL != newURL {
+                        self.readerArticle = nil
+                        self.readerParsedForURL = nil
+                    }
                 }
             }
         )

@@ -84,6 +84,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
                     lastLoading = currentLoading
                     splitVC.webViewController.displayTab(tabManager.selectedTab)
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)
+                    splitVC.syncReaderModeForSelectedTab()
                 } else if currentURL != lastURL {
                     lastURL = currentURL
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)

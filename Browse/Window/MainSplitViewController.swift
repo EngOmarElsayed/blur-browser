@@ -27,7 +27,11 @@ final class MainSplitViewController: NSViewController {
     private let topHoverZone = HoverDetectorView()
     private var hideTimer: Timer?
     private var readerOverlay: ReaderModeView?
-    private var readerDimView: NSView?
+    private var readerDimView: GaussianBlurView?
+
+    /// Blur radius for the reader-mode dim (live CAFilter Gaussian blur).
+    /// Tune this to taste.
+    private let readerBlurRadius: CGFloat = 8
 
     init(tabManager: TabManager, historyStore: HistoryStore) {
         self.tabManager = tabManager
@@ -159,7 +163,7 @@ final class MainSplitViewController: NSViewController {
         sidebarVC.view.isHidden = isSidebarCollapsed
 
         // Sidebar toggle button
-        let toggleSize: CGFloat = 28
+        let _: CGFloat = 28
         let trafficLightCenterY: CGFloat
         if let closeButton = view.window?.standardWindowButton(.closeButton) {
             let closeFrame = closeButton.convert(closeButton.bounds, to: view)
@@ -398,32 +402,64 @@ final class MainSplitViewController: NSViewController {
     // MARK: - Reader Mode
 
     func toggleReaderMode() {
-        if readerOverlay != nil {
-            dismissReaderMode()
+        guard let tab = tabManager.selectedTab else { return }
+
+        if tab.readerArticle != nil {
+            // Reader is active for this tab — dismiss it and clear tab state
+            tab.readerArticle = nil
+            tab.readerParsedForURL = nil
+            unmountReaderOverlay(animated: true)
+            addressBar.setReaderActive(false)
         } else {
-            Task { await presentReaderMode() }
+            // Reader is off — parse and enable
+            Task { await enableReaderMode(on: tab) }
         }
     }
 
-    private func presentReaderMode() async {
-        guard let webView = tabManager.selectedTab?.webView else { return }
-        guard let article = await ReaderModeService.parseArticle(webView: webView) else {
+    /// Parses the article for the given tab, stores it on the tab, and mounts
+    /// the overlay if the tab is still selected when parsing completes.
+    private func enableReaderMode(on tab: BrowserTab) async {
+        guard let article = await ReaderModeService.parseArticle(webView: tab.webView) else {
             print("[ReaderMode] Failed to parse article for reader mode")
             NSSound.beep()
             return
         }
 
-        // Dim background — black 30% opacity to focus attention on the reader
-        let dim = NSView()
+        tab.readerArticle = article
+        tab.readerParsedForURL = tab.url
+
+        // If the user switched away while parsing, don't mount — the overlay
+        // will reappear when they switch back.
+        guard tabManager.selectedTab === tab else { return }
+        mountReaderOverlay(for: article, animated: true)
+        addressBar.setReaderActive(true)
+    }
+
+    /// Mounts the reader overlay for the currently selected tab.
+    /// Caller must ensure the selected tab has a cached `readerArticle`.
+    private func mountReaderOverlay(for article: ReaderArticle, animated: Bool) {
+        // If an overlay already exists (e.g., stale from previous tab), tear it down first.
+        unmountReaderOverlay(animated: false)
+
+        // Reader overlay sits inside the content container, offset down by the
+        // toolbar height so it only covers the web page area (not the address bar).
+        let host = contentContainerView
+        let toolbarInset = isAddressBarHidden && !isAddressBarTemporarilyShown ? 0 : Layout.toolbarHeight
+
+        // Dim background — live Gaussian blur (CAFilter private API) matching
+        // the "Blur" browser name. Blurs the web page content in real time.
+        let dim = GaussianBlurView(radius: readerBlurRadius)
         dim.wantsLayer = true
-        dim.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.3).cgColor
+        dim.layer?.cornerRadius = 8
+        dim.layer?.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
+        dim.layer?.masksToBounds = true
         dim.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(dim, positioned: .above, relativeTo: nil)
+        host.addSubview(dim, positioned: .above, relativeTo: nil)
         NSLayoutConstraint.activate([
-            dim.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            dim.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            dim.topAnchor.constraint(equalTo: view.topAnchor),
-            dim.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            dim.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+            dim.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+            dim.topAnchor.constraint(equalTo: host.topAnchor, constant: CGFloat(toolbarInset)),
+            dim.bottomAnchor.constraint(equalTo: host.bottomAnchor),
         ])
         readerDimView = dim
 
@@ -435,50 +471,99 @@ final class MainSplitViewController: NSViewController {
         overlay.onClose = { [weak self] in
             self?.dismissReaderMode()
         }
+        overlay.onLinkClicked = { [weak self] url in
+            // Open the link in a new selected tab. The reader stays active on
+            // the original tab so the user can return to it.
+            self?.tabManager.addNewTab(url: url)
+        }
         overlay.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(overlay, positioned: .above, relativeTo: dim)
+        host.addSubview(overlay, positioned: .above, relativeTo: dim)
 
-        // Reader panel size — centered in the window, smaller than the whole area.
-        // Change ReaderModeView.panelWidth / panelHeight to resize.
         NSLayoutConstraint.activate([
-            overlay.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            overlay.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            overlay.centerXAnchor.constraint(equalTo: dim.centerXAnchor),
+            overlay.centerYAnchor.constraint(equalTo: dim.centerYAnchor),
+            overlay.widthAnchor.constraint(lessThanOrEqualTo: dim.widthAnchor, constant: -40),
+            overlay.heightAnchor.constraint(lessThanOrEqualTo: dim.heightAnchor, constant: -40),
             overlay.widthAnchor.constraint(equalToConstant: ReaderModeView.panelWidth),
-            overlay.heightAnchor.constraint(lessThanOrEqualTo: view.heightAnchor, constant: -40),
             overlay.heightAnchor.constraint(equalToConstant: ReaderModeView.panelHeight),
         ])
 
-        // Keep border overlay above the reader so the Arc-style border stays drawn
-        view.addSubview(borderOverlay, positioned: .above, relativeTo: overlay)
-
-        overlay.alphaValue = 0
-        dim.alphaValue = 0
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.2
-            overlay.animator().alphaValue = 1
-            dim.animator().alphaValue = 1
-        }, completionHandler: nil)
+        if animated {
+            overlay.alphaValue = 0
+            dim.alphaValue = 0
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.2
+                overlay.animator().alphaValue = 1
+                dim.animator().alphaValue = 1
+            }, completionHandler: nil)
+        } else {
+            overlay.alphaValue = 1
+            dim.alphaValue = 1
+        }
 
         readerOverlay = overlay
+    }
+
+    /// Removes the reader overlay from the view hierarchy without touching any
+    /// tab's reader state. Use when hiding the overlay for a tab switch.
+    private func unmountReaderOverlay(animated: Bool) {
+        guard let overlay = readerOverlay else { return }
+        let dim = readerDimView
+        readerOverlay = nil
+        readerDimView = nil
+
+        if animated {
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.15
+                overlay.animator().alphaValue = 0
+                dim?.animator().alphaValue = 0
+            }, completionHandler: {
+                overlay.removeFromSuperview()
+                dim?.removeFromSuperview()
+            })
+        } else {
+            overlay.removeFromSuperview()
+            dim?.removeFromSuperview()
+        }
     }
 
     @objc private func readerDimClicked() {
         dismissReaderMode()
     }
 
+    /// User-initiated dismissal (X / ESC / click outside). Clears the tab's
+    /// reader state and unmounts the overlay.
     private func dismissReaderMode() {
-        guard let overlay = readerOverlay else { return }
-        let dim = readerDimView
-        readerOverlay = nil
-        readerDimView = nil
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.15
-            overlay.animator().alphaValue = 0
-            dim?.animator().alphaValue = 0
-        }, completionHandler: {
-            overlay.removeFromSuperview()
-            dim?.removeFromSuperview()
-        })
+        if let tab = tabManager.selectedTab {
+            tab.readerArticle = nil
+            tab.readerParsedForURL = nil
+        }
+        unmountReaderOverlay(animated: true)
+        addressBar.setReaderActive(false)
+    }
+
+    /// Called when the selected tab changes. Hides any overlay from the old
+    /// tab and shows the cached one on the new tab if reader was active there.
+    func syncReaderModeForSelectedTab() {
+        guard let tab = tabManager.selectedTab else {
+            unmountReaderOverlay(animated: false)
+            addressBar.setReaderActive(false)
+            return
+        }
+
+        // Invalidate cache if the tab has navigated away from the parsed URL
+        if let parsedURL = tab.readerParsedForURL, parsedURL != tab.url {
+            tab.readerArticle = nil
+            tab.readerParsedForURL = nil
+        }
+
+        if let article = tab.readerArticle {
+            mountReaderOverlay(for: article, animated: false)
+            addressBar.setReaderActive(true)
+        } else {
+            unmountReaderOverlay(animated: false)
+            addressBar.setReaderActive(false)
+        }
     }
 
     // MARK: - Divider Drag

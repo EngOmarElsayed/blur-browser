@@ -250,6 +250,16 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         readerButton.isHidden = !available
     }
 
+    /// Update the reader pill's appearance to reflect whether reader mode is
+    /// currently active on the selected tab.
+    func setReaderActive(_ active: Bool) {
+        readerButton.image = NSImage(
+            systemSymbolName: active ? "doc.plaintext.fill" : "doc.plaintext",
+            accessibilityDescription: "Reader Mode"
+        )
+        readerButton.contentTintColor = active ? Colors.accentPrimary : Colors.foregroundSecondary
+    }
+
     func focusAndSelectAll() {
         view.window?.makeFirstResponder(urlField)
         urlField.currentEditor()?.selectAll(nil)
