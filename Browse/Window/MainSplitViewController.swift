@@ -28,6 +28,7 @@ final class MainSplitViewController: NSViewController {
     private var hideTimer: Timer?
     private var readerOverlay: ReaderModeView?
     private var readerDimView: GaussianBlurView?
+    private var readerDimTopConstraint: NSLayoutConstraint?
 
     /// Blur radius for the reader-mode dim (live CAFilter Gaussian blur).
     /// Tune this to taste.
@@ -262,6 +263,9 @@ final class MainSplitViewController: NSViewController {
         // Border overlay always on top, covering full bounds
         borderOverlay.frame = bounds
         view.addSubview(borderOverlay, positioned: .above, relativeTo: nil)
+
+        // Keep the reader dim view's top inset in sync with the address bar
+        updateReaderDimTopInset()
     }
 
     private func makeToolbarView() -> NSView {
@@ -462,13 +466,15 @@ final class MainSplitViewController: NSViewController {
         dim.layer?.masksToBounds = true
         dim.translatesAutoresizingMaskIntoConstraints = false
         host.addSubview(dim, positioned: .above, relativeTo: nil)
+        let topConstraint = dim.topAnchor.constraint(equalTo: host.topAnchor, constant: CGFloat(toolbarInset))
         NSLayoutConstraint.activate([
             dim.leadingAnchor.constraint(equalTo: host.leadingAnchor),
             dim.trailingAnchor.constraint(equalTo: host.trailingAnchor),
-            dim.topAnchor.constraint(equalTo: host.topAnchor, constant: CGFloat(toolbarInset)),
+            topConstraint,
             dim.bottomAnchor.constraint(equalTo: host.bottomAnchor),
         ])
         readerDimView = dim
+        readerDimTopConstraint = topConstraint
 
         // Dismiss on clicking outside the reader panel
         let clickRecognizer = NSClickGestureRecognizer(target: self, action: #selector(readerDimClicked))
@@ -518,6 +524,7 @@ final class MainSplitViewController: NSViewController {
         let dim = readerDimView
         readerOverlay = nil
         readerDimView = nil
+        readerDimTopConstraint = nil
 
         if animated {
             NSAnimationContext.runAnimationGroup({ ctx in
@@ -532,6 +539,16 @@ final class MainSplitViewController: NSViewController {
             overlay.removeFromSuperview()
             dim?.removeFromSuperview()
         }
+    }
+
+    /// Keep the reader dim view's top inset in sync with the address bar's
+    /// current visibility (focus mode, toggle, hover reveal).
+    private func updateReaderDimTopInset() {
+        guard let topConstraint = readerDimTopConstraint else { return }
+        let toolbarInset: CGFloat = (isAddressBarHidden && !isAddressBarTemporarilyShown)
+            ? 0
+            : Layout.toolbarHeight
+        topConstraint.constant = toolbarInset
     }
 
     @objc private func readerDimClicked() {
