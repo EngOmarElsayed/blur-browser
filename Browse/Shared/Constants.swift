@@ -58,7 +58,8 @@ enum AppConstants {
     static let defaultSearchURL = "https://www.google.com/search?q="
     static let googleSuggestURL = "https://suggestqueries.google.com/complete/search?client=firefox&q="
     static let defaultHomeURL   = "https://www.google.com"
-    static let newTabURL        = "blur://newtab"
+    static let newTabURLString  = "blur://newtab"
+    static let newTabURL        = URL(string: newTabURLString)!
     static let appName = "Blur-Browser"
 }
 
