@@ -21,7 +21,7 @@ struct UnpinnedTabsList: View {
                     .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
                 Spacer()
                 Button {
-                    tabManager.addNewTab(url: URL(string: SettingsStore.shared.homepageURL))
+                    tabManager.addNewTab(url: nil)
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 13))

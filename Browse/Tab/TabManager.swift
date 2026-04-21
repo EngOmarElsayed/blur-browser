@@ -30,12 +30,13 @@ final class TabManager {
     }
 
     init() {
-        addNewTab(url: URL(string: SettingsStore.shared.homepageURL))
+        addNewTab(url: URL(string: AppConstants.newTabURL))
     }
 
     @discardableResult
     func addNewTab(url: URL? = nil, afterCurrent: Bool = true) -> BrowserTab {
-        let tab = BrowserTab(url: url)
+        let resolvedURL = url ?? URL(string: AppConstants.newTabURL)
+        let tab = BrowserTab(url: resolvedURL)
         if afterCurrent, let idx = selectedIndex {
             tabs.insert(tab, at: idx + 1)
         } else {
