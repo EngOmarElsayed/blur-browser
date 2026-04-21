@@ -58,6 +58,10 @@ struct SidebarButtons: View {
             }
             .buttonStyle(.plain)
 
+            ThemePaletteAnchorButton()
+                .help("Change Theme")
+                .accessibilityLabel("Change theme")
+
             Button {
                 SettingsWindowController.shared.showSettings()
             } label: {
@@ -68,6 +72,44 @@ struct SidebarButtons: View {
             .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Theme Palette Anchor
+
+/// SwiftUI wrapper around an NSView that anchors the theme picker NSPopover.
+/// Needed because NSPopover.show(relativeTo:of:preferredEdge:) needs an AppKit
+/// view to attach to, and the surrounding sidebar is pure SwiftUI.
+private struct ThemePaletteAnchorButton: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSButton {
+        let button = NSButton()
+        button.title = ""
+        button.isBordered = false
+        button.bezelStyle = .regularSquare
+        button.image = NSImage(systemSymbolName: "paintpalette", accessibilityDescription: "Change theme")
+        button.contentTintColor = Colors.foregroundMuted
+        button.imagePosition = .imageOnly
+        button.target = context.coordinator
+        button.action = #selector(Coordinator.tapped(_:))
+        // Compact size to match other sidebar footer icons
+        button.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        button.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        return button
+    }
+
+    func updateNSView(_ nsView: NSButton, context: Context) {
+        nsView.contentTintColor = Colors.foregroundMuted
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator: NSObject {
+        @MainActor
+        @objc func tapped(_ sender: NSButton) {
+            ThemePickerPopoverController.shared.show(relativeTo: sender)
+        }
     }
 }
 
