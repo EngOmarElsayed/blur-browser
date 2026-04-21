@@ -45,6 +45,9 @@ final class BrowserTab: Identifiable {
         // from the moment the page starts loading
         observeWebView(wv)
 
+        // Sync the initial color scheme to the active theme
+        Self.syncColorScheme(wv)
+
         if let url {
             wv.load(URLRequest(url: url))
         }
@@ -166,7 +169,23 @@ final class BrowserTab: Identifiable {
             config.userContentController.addUserScript(videoScanner)
         }
 
+        // Register blur:// and blur-image:// scheme handlers for the themed new tab page.
+        let blurHandler = BlurSchemeHandler()
+        config.setURLSchemeHandler(blurHandler, forURLScheme: "blur")
+        config.setURLSchemeHandler(blurHandler, forURLScheme: "blur-image")
+
         return config
+    }
+
+    /// Apply the active theme's `isDark` flag to the web view's page preferences
+    /// so websites can react via `prefers-color-scheme`.
+    static func syncColorScheme(_ wv: WKWebView) {
+        let isDark = ThemeStore.shared.isDark
+        wv.underPageBackgroundColor = isDark ? NSColor.black : NSColor.white
+        // Appearance affects system color scheme inside WKWebView
+        wv.appearance = isDark
+            ? NSAppearance(named: .darkAqua)
+            : NSAppearance(named: .aqua)
     }
 }
 
