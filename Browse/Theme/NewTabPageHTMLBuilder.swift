@@ -89,29 +89,6 @@ enum NewTabPageHTMLBuilder {
         </head>
         <body>
           <div class="bg"></div>
-          <div class="scrim"></div>
-          <div class="content">
-            <div class="greeting">\(htmlEscape(greeting))</div>
-            <form class="search-wrap" onsubmit="return submitSearch(event)">
-              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input id="q" class="search" type="text" placeholder="\(htmlEscape(searchPlaceholder))" autocomplete="off" autofocus>
-            </form>
-          </div>
-          <script>
-            function submitSearch(e) {
-              e.preventDefault();
-              const v = document.getElementById('q').value.trim();
-              if (!v) return false;
-              if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.newTabSubmit) {
-                window.webkit.messageHandlers.newTabSubmit.postMessage(v);
-              }
-              return false;
-            }
-            // Ensure input stays focused even if the page gets re-laid-out
-            window.addEventListener('load', () => {
-              document.getElementById('q').focus();
-            });
-          </script>
         </body>
         </html>
         """
