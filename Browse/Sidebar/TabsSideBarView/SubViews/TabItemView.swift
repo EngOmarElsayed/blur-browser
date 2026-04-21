@@ -59,6 +59,15 @@ struct TabItemView: View {
                         : Color.clear
                 )
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(
+                    isSelected
+                        ? Color(nsColor: Colors.accentPrimary).opacity(0.6)
+                    : .clear,
+                    lineWidth: isSelected ? 1.5 : 0
+                )
+        )
         .padding(.horizontal, 6)
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
