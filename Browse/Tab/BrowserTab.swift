@@ -177,13 +177,15 @@ final class BrowserTab: Identifiable {
         return config
     }
 
-    /// Apply the active theme's `isDark` flag to the web view's page preferences
-    /// so websites can react via `prefers-color-scheme`.
+    /// Apply the active theme's `isDark` flag to the web view's appearance and
+    /// under-page background so websites react to `prefers-color-scheme` and
+    /// the chrome/content boundary doesn't flash during scroll or navigation.
     static func syncColorScheme(_ wv: WKWebView) {
-        let isDark = ThemeStore.shared.isDark
-        wv.underPageBackgroundColor = isDark ? NSColor.black : NSColor.white
-        // Appearance affects system color scheme inside WKWebView
-        wv.appearance = isDark
+        let theme = ThemeStore.shared.current
+        // Match the chrome so elastic scroll and between-navigation gaps don't flash.
+        wv.underPageBackgroundColor = theme.chromeColor
+        // Appearance affects system color scheme inside WKWebView (e.g. prefers-color-scheme).
+        wv.appearance = theme.isDark
             ? NSAppearance(named: .darkAqua)
             : NSAppearance(named: .aqua)
     }
