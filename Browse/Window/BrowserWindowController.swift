@@ -91,7 +91,9 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
                 let currentThemeID = ThemeStore.shared.currentThemeID
                 if currentThemeID != lastThemeID {
                     lastThemeID = currentThemeID
+                    (window as? BrowserWindow)?.applyActiveTheme()
                     splitVC.reapplyTheme()
+                    splitVC.addressBar.applyActiveTheme()
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)
                 }
                 let currentID = tabManager.selectedTabID

@@ -870,6 +870,21 @@ final class MainSplitViewController: NSViewController {
     /// Views that cache theme colors in stored properties at configuration
     /// time (e.g. the address bar) are refreshed explicitly by callers.
     func reapplyTheme() {
+        // Root split view background
+        view.layer?.backgroundColor = Colors.chromeBg.cgColor
+
+        // History panel background (created in viewDidLoad, hidden/shown via frames)
+        historyHostingVC.view.layer?.backgroundColor = Colors.chromeBg.cgColor
+
+        // Resize divider line colors — ResizeDividerView caches the borderLight
+        // token in its sublayer at init, so update them explicitly.
+        leftDividerView.reapplyTheme()
+        rightDividerView.reapplyTheme()
+
+        // Sidebar toggle button tint (cached at configuration time)
+        sidebarToggleButton.contentTintColor = Colors.foregroundMuted
+
+        // Invalidate any descendant views that re-read theme tokens on draw.
         walkAndInvalidate(view)
     }
 
@@ -972,5 +987,12 @@ final class ResizeDividerView: NSView {
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: .resizeLeftRight)
+    }
+
+    /// Re-apply theme-dependent colors. The line layer caches a borderLight-derived
+    /// CGColor at init and doesn't re-read on invalidate.
+    @MainActor
+    func reapplyTheme() {
+        lineLayer.backgroundColor = Colors.borderLight.withAlphaComponent(0.4).cgColor
     }
 }

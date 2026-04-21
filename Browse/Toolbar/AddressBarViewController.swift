@@ -260,6 +260,31 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         readerButton.contentTintColor = active ? Colors.accentPrimary : Colors.foregroundSecondary
     }
 
+    /// Re-apply theme-dependent layer colors and control tints after a theme switch.
+    /// Views that cache theme tokens in stored properties (layer colors, contentTintColor,
+    /// textColor) don't re-read on invalidate, so we rewrite them here.
+    func applyActiveTheme() {
+        progressBar.layer?.backgroundColor = Colors.accentPrimary.cgColor
+
+        // Nav button tints
+        sidebarToggleButton.contentTintColor = Colors.foregroundMuted
+        backButton.contentTintColor = Colors.foregroundMuted
+        forwardButton.contentTintColor = Colors.foregroundMuted
+        reloadButton.contentTintColor = Colors.foregroundMuted
+        shareButton.contentTintColor = Colors.foregroundMuted
+        moreButton.contentTintColor = Colors.foregroundMuted
+
+        // URL field text
+        urlField.textColor = Colors.foregroundSecondary
+
+        // Reader button defaults to the inactive tint; callers will flip it active
+        // again via setReaderActive(_:) on the next tab update if needed.
+        readerButton.contentTintColor = Colors.foregroundSecondary
+
+        // Re-render any theme-aware text/icon tints by forcing an update path
+        view.needsDisplay = true
+    }
+
     func focusAndSelectAll() {
         view.window?.makeFirstResponder(urlField)
         urlField.currentEditor()?.selectAll(nil)

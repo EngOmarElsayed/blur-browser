@@ -39,6 +39,11 @@ final class BrowserWindow: NSWindow {
         )
     }
 
+    /// Re-apply theme-dependent colors (called by BrowserWindowController on theme change).
+    func applyActiveTheme() {
+        backgroundColor = Colors.chromeBg
+    }
+
     @objc private func willEnterFullScreen() {
         toolbar?.isVisible = false
     }
