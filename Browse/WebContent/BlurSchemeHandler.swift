@@ -5,15 +5,11 @@ import WebKit
 @MainActor
 final class BlurSchemeHandler: NSObject, WKURLSchemeHandler {
 
-    nonisolated func webView(_ webView: WKWebView, start urlSchemeTask: any WKURLSchemeTask) {
-        Task { @MainActor in
-            await handle(urlSchemeTask)
-        }
+    func webView(_ webView: WKWebView, start urlSchemeTask: any WKURLSchemeTask) {
+        Task { await handle(urlSchemeTask) }
     }
 
-    nonisolated func webView(_ webView: WKWebView, stop urlSchemeTask: any WKURLSchemeTask) {
-        // No long-running work to cancel.
-    }
+    func webView(_ webView: WKWebView, stop urlSchemeTask: any WKURLSchemeTask) {}
 
     // MARK: - Routing
 
