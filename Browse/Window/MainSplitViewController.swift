@@ -856,6 +856,28 @@ final class MainSplitViewController: NSViewController {
         historyPanelWidth = newWidth
         layoutSubviews()
     }
+
+    // MARK: - Theme re-render
+
+    /// Walk all theme-sensitive subviews and force a redraw.
+    /// Called by BrowserWindowController when ThemeStore.currentThemeID changes.
+    func reapplyTheme() {
+        // Force the entire view tree to redraw.
+        view.needsDisplay = true
+        view.layoutSubtreeIfNeeded()
+        walkAndInvalidate(view)
+    }
+
+    private func walkAndInvalidate(_ v: NSView) {
+        v.needsDisplay = true
+        // Redraw layer-backed views
+        if let layer = v.layer {
+            layer.setNeedsDisplay()
+            // Layer-backed views with a backgroundColor set from theme need re-setting
+            v.needsLayout = true
+        }
+        for sub in v.subviews { walkAndInvalidate(sub) }
+    }
 }
 
 // MARK: - Arc-Style Window Border Overlay

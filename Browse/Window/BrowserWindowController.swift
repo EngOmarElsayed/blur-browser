@@ -85,7 +85,15 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
             var lastProgress: Double = 0
             var lastLoading: Bool = false
             var lastDownloadSignature: String = ""
+            var lastThemeID: ThemeID? = ThemeStore.shared.currentThemeID
             while !Task.isCancelled {
+                // Theme change detection
+                let currentThemeID = ThemeStore.shared.currentThemeID
+                if currentThemeID != lastThemeID {
+                    lastThemeID = currentThemeID
+                    splitVC.reapplyTheme()
+                    splitVC.addressBar.updateForTab(tabManager.selectedTab)
+                }
                 let currentID = tabManager.selectedTabID
                 let currentURL = tabManager.selectedTab?.url
                 let currentProgress = tabManager.selectedTab?.estimatedProgress ?? 0
