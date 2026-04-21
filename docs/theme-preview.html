@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blur-Browser Theme Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #F5F5F7;
+    color: #1A1A1A;
+    padding: 40px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 48px;
+  }
+
+  .themes-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .theme-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.06);
+  }
+
+  .theme-header {
+    padding: 24px 28px 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .theme-name {
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .theme-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #6366F1;
+    color: white;
+  }
+
+  .theme-mood {
+    padding: 0 28px 20px;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  /* Browser mockup */
+  .browser-mockup {
+    margin: 0 28px 24px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+    display: flex;
+    height: 340px;
+  }
+
+  /* Sidebar */
+  .mock-sidebar {
+    width: 200px;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+    position: relative;
+  }
+
+  .traffic-lights {
+    display: flex;
+    gap: 7px;
+    padding: 6px 14px 14px;
+  }
+
+  .traffic-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .dot-red { background: #FF5F57; }
+  .dot-yellow { background: #FEBC2E; }
+  .dot-green { background: #28C840; }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 14px 4px;
+    opacity: 0.5;
+  }
+
+  .tab-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    border-radius: 6px;
+    margin: 1px 6px;
+    cursor: default;
+  }
+
+  .tab-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  .sidebar-bottom {
+    margin-top: auto;
+    padding: 8px 6px;
+    display: flex;
+    gap: 4px;
+  }
+
+  .sidebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  /* Main content area */
+  .mock-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mock-toolbar {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .nav-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .url-bar {
+    flex: 1;
+    height: 32px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .mock-webview {
+    flex: 1;
+    margin: 0 8px 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .webview-bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .new-tab-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 2;
+  }
+
+  .new-tab-greeting {
+    font-size: 20px;
+    font-weight: 500;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    color: white;
+  }
+
+  .new-tab-search {
+    width: 320px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.25);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .wallpaper-scrim {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.15);
+    z-index: 1;
+  }
+
+  /* Color swatches */
+  .color-section {
+    padding: 16px 28px 24px;
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .swatch-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .swatch-label {
+    font-size: 11px;
+    color: #999;
+    font-weight: 500;
+  }
+
+  .swatch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .swatch-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+
+  .swatch-hex {
+    font-size: 12px;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    color: #666;
+  }
+
+  /* Wallpaper gallery */
+  .wallpapers-section {
+    padding: 0 28px 24px;
+  }
+
+  .wallpapers-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  .wallpaper-gallery {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+
+  .wallpaper-thumb {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    cursor: pointer;
+    background: #eee;
+  }
+
+  .wallpaper-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s ease;
+  }
+
+  .wallpaper-thumb:hover img {
+    transform: scale(1.05);
+  }
+
+  .wallpaper-thumb-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px 8px 6px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.5));
+    color: white;
+    font-size: 10px;
+    line-height: 1.3;
+    pointer-events: none;
+  }
+
+  .download-icon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none;
+    transform: translateY(-4px);
+  }
+
+  .wallpaper-thumb:hover .download-icon {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .wallpaper-thumb.downloading .download-icon {
+    opacity: 1;
+    transform: translateY(0);
+    background: rgba(99,102,241,0.9);
+  }
+
+  .wallpaper-thumb.downloaded .download-icon {
+    opacity: 1;
+    transform: translateY(0);
+    background: rgba(34,197,94,0.9);
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .wallpaper-thumb.downloading .download-icon svg {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(26,26,26,0.95);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .toast.error {
+    background: rgba(239,68,68,0.95);
+  }
+
+  .divider {
+    height: 1px;
+    background: #E5E7EB;
+    margin: 0 28px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Blur-Browser Themes</h1>
+<p class="subtitle">7 curated themes &mdash; Places & Moods. Sidebar, toolbar, and all panels share one chrome color. URL bar is always white.</p>
+
+<div class="themes-grid">
+
+  <!-- ============================================ -->
+  <!-- THEME 1: Periwinkle (Default) -->
+  <!-- ============================================ -->
+  <div class="theme-card">
+    <div class="theme-header">
+      <span class="theme-name">Periwinkle</span>
+      <span class="theme-badge">Default</span>
+    </div>
+    <p class="theme-mood">Airy periwinkle blue with an indigo accent — like a clear sky through frosted glass. The current Blur-Browser identity.</p>
+
+    <div class="browser-mockup">
+      <div class="mock-sidebar" style="background: #92B4F4; color: #1A1A1A;">
+        <div class="traffic-lights">
+          <div class="traffic-dot dot-red"></div>
+          <div class="traffic-dot dot-yellow"></div>
+          <div class="traffic-dot dot-green"></div>
+        </div>
+        <div class="sidebar-section-label" style="color: #1A1A1A;">Tabs</div>
+        <div class="tab-item" style="background: rgba(99,102,241,0.2);">
+          <div class="tab-icon" style="background: #6366F1; opacity: 0.8;"></div>
+          <span>New Tab</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.7;">
+          <div class="tab-icon" style="background: #1A1A1A;"></div>
+          <span>GitHub</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.7;">
+          <div class="tab-icon" style="background: #1A1A1A;"></div>
+          <span>Linear</span>
+        </div>
+        <div class="sidebar-bottom">
+          <div class="sidebar-btn" style="color: #1A1A1A;">+</div>
+          <div class="sidebar-btn" style="color: #1A1A1A;">&#9776;</div>
+          <div class="sidebar-btn" style="color: #6366F1;">&#9673;</div>
+        </div>
+      </div>
+      <div class="mock-main" style="background: #92B4F4;">
+        <div class="mock-toolbar">
+          <div class="nav-btn" style="color: #1A1A1A;">&#9664;</div>
+          <div class="nav-btn" style="color: #1A1A1A;">&#9654;</div>
+          <div class="url-bar" style="color: #1A1A1A; border: 1px solid #C5CAE0;">blur://newtab</div>
+        </div>
+        <div class="mock-webview">
+          <img class="webview-bg-img" src="https://images.unsplash.com/photo-1767179503754-5f80a9a1839d?w=800&h=500&fit=crop&auto=format" alt="Turquoise ocean">
+          <div class="wallpaper-scrim"></div>
+          <div class="new-tab-content">
+            <div class="new-tab-greeting">Good afternoon</div>
+            <div class="new-tab-search">&#128269; Search or enter URL...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section">
+      <div class="swatch-group">
+        <span class="swatch-label">Chrome</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #92B4F4;"></div><span class="swatch-hex">#92B4F4</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Text & Icons</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #1A1A1A;"></div><span class="swatch-hex">#1A1A1A</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Accent</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #6366F1;"></div><span class="swatch-hex">#6366F1</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Border</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #C5CAE0;"></div><span class="swatch-hex">#C5CAE0</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">URL Bar</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #FFFFFF;"></div><span class="swatch-hex">#FFFFFF</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="wallpapers-section" style="padding-top: 16px;">
+      <div class="wallpapers-label">Wallpapers</div>
+      <div class="wallpaper-gallery">
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1767179503754-5f80a9a1839d?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Turquoise lake, aerial view</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1718600632104-b79448dbb0a2?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Lavender bloom, macro detail</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1511818966892-d7d671e672a2?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">White building, blue sky</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1523633589114-88eaf4b4f1a8?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Pale blue pool, diagonal shadow</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1550353127-b0da3aeaa0ca?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Frosted glass, blue-violet light</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- THEME 2: Midnight -->
+  <!-- ============================================ -->
+  <div class="theme-card">
+    <div class="theme-header">
+      <span class="theme-name">Midnight</span>
+      <span class="theme-badge" style="background: #818CF8;">Dark</span>
+    </div>
+    <p class="theme-mood">Deep ink-blue darkness that's warm enough to not feel clinical — a softened indigo accent glows against dark chrome. Sets <code style="font-size:11px; background:rgba(0,0,0,0.06); padding:2px 4px; border-radius:3px;">prefers-color-scheme: dark</code>.</p>
+
+    <div class="browser-mockup">
+      <div class="mock-sidebar" style="background: #1C1E2A; color: #E2E4EA;">
+        <div class="traffic-lights">
+          <div class="traffic-dot dot-red"></div>
+          <div class="traffic-dot dot-yellow"></div>
+          <div class="traffic-dot dot-green"></div>
+        </div>
+        <div class="sidebar-section-label" style="color: #E2E4EA;">Tabs</div>
+        <div class="tab-item" style="background: rgba(129,140,248,0.15);">
+          <div class="tab-icon" style="background: #818CF8; opacity: 0.8;"></div>
+          <span>New Tab</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.5;">
+          <div class="tab-icon" style="background: #E2E4EA;"></div>
+          <span>GitHub</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.5;">
+          <div class="tab-icon" style="background: #E2E4EA;"></div>
+          <span>Linear</span>
+        </div>
+        <div class="sidebar-bottom">
+          <div class="sidebar-btn" style="color: #E2E4EA;">+</div>
+          <div class="sidebar-btn" style="color: #E2E4EA;">&#9776;</div>
+          <div class="sidebar-btn" style="color: #818CF8;">&#9673;</div>
+        </div>
+      </div>
+      <div class="mock-main" style="background: #1C1E2A;">
+        <div class="mock-toolbar">
+          <div class="nav-btn" style="color: #E2E4EA;">&#9664;</div>
+          <div class="nav-btn" style="color: #E2E4EA;">&#9654;</div>
+          <div class="url-bar" style="color: #1A1A1A; border: 1px solid #3A3D50;">blur://newtab</div>
+        </div>
+        <div class="mock-webview">
+          <img class="webview-bg-img" src="https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&h=500&fit=crop&auto=format" alt="Night sky">
+          <div class="wallpaper-scrim" style="background: rgba(0,0,0,0.25);"></div>
+          <div class="new-tab-content">
+            <div class="new-tab-greeting">Good evening</div>
+            <div class="new-tab-search" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12);">&#128269; Search or enter URL...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section">
+      <div class="swatch-group">
+        <span class="swatch-label">Chrome</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #1C1E2A;"></div><span class="swatch-hex">#1C1E2A</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Text & Icons</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #E2E4EA; border-color: #ccc;"></div><span class="swatch-hex">#E2E4EA</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Accent</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #818CF8;"></div><span class="swatch-hex">#818CF8</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Border</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #3A3D50;"></div><span class="swatch-hex">#3A3D50</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">URL Bar</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #FFFFFF;"></div><span class="swatch-hex">#FFFFFF</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="wallpapers-section" style="padding-top: 16px;">
+      <div class="wallpapers-label">Wallpapers</div>
+      <div class="wallpaper-gallery">
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Starry night, mountain silhouette</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1514565131-fce0801e5785?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">City grid at night, amber lights</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Volcanic rock, blue glow</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Long exposure waves, dark rocks</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Ink in water, indigo swirls</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- THEME 3: Sandstone -->
+  <!-- ============================================ -->
+  <div class="theme-card">
+    <div class="theme-header">
+      <span class="theme-name">Sandstone</span>
+    </div>
+    <p class="theme-mood">Sun-baked clay and natural linen — like a Marrakech riad in afternoon light. Grounding and calm.</p>
+
+    <div class="browser-mockup">
+      <div class="mock-sidebar" style="background: #D4C4A8; color: #2C2416;">
+        <div class="traffic-lights">
+          <div class="traffic-dot dot-red"></div>
+          <div class="traffic-dot dot-yellow"></div>
+          <div class="traffic-dot dot-green"></div>
+        </div>
+        <div class="sidebar-section-label" style="color: #2C2416;">Tabs</div>
+        <div class="tab-item" style="background: rgba(194,112,62,0.15);">
+          <div class="tab-icon" style="background: #C2703E; opacity: 0.8;"></div>
+          <span>New Tab</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #2C2416;"></div>
+          <span>GitHub</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #2C2416;"></div>
+          <span>Linear</span>
+        </div>
+        <div class="sidebar-bottom">
+          <div class="sidebar-btn" style="color: #2C2416;">+</div>
+          <div class="sidebar-btn" style="color: #2C2416;">&#9776;</div>
+          <div class="sidebar-btn" style="color: #C2703E;">&#9673;</div>
+        </div>
+      </div>
+      <div class="mock-main" style="background: #D4C4A8;">
+        <div class="mock-toolbar">
+          <div class="nav-btn" style="color: #2C2416;">&#9664;</div>
+          <div class="nav-btn" style="color: #2C2416;">&#9654;</div>
+          <div class="url-bar" style="color: #2C2416; border: 1px solid #BFB093;">blur://newtab</div>
+        </div>
+        <div class="mock-webview">
+          <img class="webview-bg-img" src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=800&h=500&fit=crop&auto=format" alt="Sand dunes">
+          <div class="wallpaper-scrim"></div>
+          <div class="new-tab-content">
+            <div class="new-tab-greeting">Good afternoon</div>
+            <div class="new-tab-search">&#128269; Search or enter URL...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section">
+      <div class="swatch-group">
+        <span class="swatch-label">Chrome</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #D4C4A8;"></div><span class="swatch-hex">#D4C4A8</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Text & Icons</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #2C2416;"></div><span class="swatch-hex">#2C2416</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Accent</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #C2703E;"></div><span class="swatch-hex">#C2703E</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Border</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #BFB093;"></div><span class="swatch-hex">#BFB093</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">URL Bar</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #FFFFFF;"></div><span class="swatch-hex">#FFFFFF</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="wallpapers-section" style="padding-top: 16px;">
+      <div class="wallpapers-label">Wallpapers</div>
+      <div class="wallpaper-gallery">
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Sand dunes, golden hour</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1696952252983-46cb2c304ad9?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Terracotta rooftops, warm ochre</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1686806374120-e7ae3f19801d?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Raw linen fabric, soft light</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Desert canyon, layered sandstone</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1713810958161-48f64ca4c5d6?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Ceramic bowl, window light</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- THEME 4: Nordic -->
+  <!-- ============================================ -->
+  <div class="theme-card">
+    <div class="theme-header">
+      <span class="theme-name">Nordic</span>
+    </div>
+    <p class="theme-mood">Scandinavian winter clarity — cool grays with a quiet fjord-blue accent, like a foggy morning on still water.</p>
+
+    <div class="browser-mockup">
+      <div class="mock-sidebar" style="background: #C9D0DC; color: #1E2A33;">
+        <div class="traffic-lights">
+          <div class="traffic-dot dot-red"></div>
+          <div class="traffic-dot dot-yellow"></div>
+          <div class="traffic-dot dot-green"></div>
+        </div>
+        <div class="sidebar-section-label" style="color: #1E2A33;">Tabs</div>
+        <div class="tab-item" style="background: rgba(91,143,168,0.15);">
+          <div class="tab-icon" style="background: #5B8FA8; opacity: 0.8;"></div>
+          <span>New Tab</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #1E2A33;"></div>
+          <span>GitHub</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #1E2A33;"></div>
+          <span>Linear</span>
+        </div>
+        <div class="sidebar-bottom">
+          <div class="sidebar-btn" style="color: #1E2A33;">+</div>
+          <div class="sidebar-btn" style="color: #1E2A33;">&#9776;</div>
+          <div class="sidebar-btn" style="color: #5B8FA8;">&#9673;</div>
+        </div>
+      </div>
+      <div class="mock-main" style="background: #C9D0DC;">
+        <div class="mock-toolbar">
+          <div class="nav-btn" style="color: #1E2A33;">&#9664;</div>
+          <div class="nav-btn" style="color: #1E2A33;">&#9654;</div>
+          <div class="url-bar" style="color: #1E2A33; border: 1px solid #BCC4D1;">blur://newtab</div>
+        </div>
+        <div class="mock-webview">
+          <img class="webview-bg-img" src="https://images.unsplash.com/photo-1520769945061-0a448c463865?w=800&h=500&fit=crop&auto=format" alt="Fjord">
+          <div class="wallpaper-scrim"></div>
+          <div class="new-tab-content">
+            <div class="new-tab-greeting">Good morning</div>
+            <div class="new-tab-search">&#128269; Search or enter URL...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section">
+      <div class="swatch-group">
+        <span class="swatch-label">Chrome</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #C9D0DC;"></div><span class="swatch-hex">#C9D0DC</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Text & Icons</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #1E2A33;"></div><span class="swatch-hex">#1E2A33</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Accent</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #5B8FA8;"></div><span class="swatch-hex">#5B8FA8</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Border</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #BCC4D1;"></div><span class="swatch-hex">#BCC4D1</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">URL Bar</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #FFFFFF;"></div><span class="swatch-hex">#FFFFFF</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="wallpapers-section" style="padding-top: 16px;">
+      <div class="wallpapers-label">Wallpapers</div>
+      <div class="wallpaper-gallery">
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1520769945061-0a448c463865?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Fjord, overcast light</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Birch forest, winter</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1449247709967-d4461a6a6103?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Scandinavian interior, pale wood</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1485594050903-8e8ee7b071a8?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Frozen lake, ice cracks</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1473186578172-c141e6798cf4?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Coastal rocks, lichen, calm sea</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- THEME 5: Rosewood -->
+  <!-- ============================================ -->
+  <div class="theme-card">
+    <div class="theme-header">
+      <span class="theme-name">Rosewood</span>
+    </div>
+    <p class="theme-mood">Muted dusty rose with warm plum undertones — refined and soft, like a velvet-lined jewelry box in natural light.</p>
+
+    <div class="browser-mockup">
+      <div class="mock-sidebar" style="background: #DCCDD2; color: #2D1F23;">
+        <div class="traffic-lights">
+          <div class="traffic-dot dot-red"></div>
+          <div class="traffic-dot dot-yellow"></div>
+          <div class="traffic-dot dot-green"></div>
+        </div>
+        <div class="sidebar-section-label" style="color: #2D1F23;">Tabs</div>
+        <div class="tab-item" style="background: rgba(163,88,108,0.15);">
+          <div class="tab-icon" style="background: #A3586C; opacity: 0.8;"></div>
+          <span>New Tab</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #2D1F23;"></div>
+          <span>GitHub</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #2D1F23;"></div>
+          <span>Linear</span>
+        </div>
+        <div class="sidebar-bottom">
+          <div class="sidebar-btn" style="color: #2D1F23;">+</div>
+          <div class="sidebar-btn" style="color: #2D1F23;">&#9776;</div>
+          <div class="sidebar-btn" style="color: #A3586C;">&#9673;</div>
+        </div>
+      </div>
+      <div class="mock-main" style="background: #DCCDD2;">
+        <div class="mock-toolbar">
+          <div class="nav-btn" style="color: #2D1F23;">&#9664;</div>
+          <div class="nav-btn" style="color: #2D1F23;">&#9654;</div>
+          <div class="url-bar" style="color: #2D1F23; border: 1px solid #C4B2B8;">blur://newtab</div>
+        </div>
+        <div class="mock-webview">
+          <img class="webview-bg-img" src="https://images.unsplash.com/photo-1533628635777-112b2239b1c7?w=800&h=500&fit=crop&auto=format" alt="Dried flowers">
+          <div class="wallpaper-scrim"></div>
+          <div class="new-tab-content">
+            <div class="new-tab-greeting">Good afternoon</div>
+            <div class="new-tab-search">&#128269; Search or enter URL...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section">
+      <div class="swatch-group">
+        <span class="swatch-label">Chrome</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #DCCDD2;"></div><span class="swatch-hex">#DCCDD2</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Text & Icons</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #2D1F23;"></div><span class="swatch-hex">#2D1F23</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Accent</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #A3586C;"></div><span class="swatch-hex">#A3586C</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Border</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #C4B2B8;"></div><span class="swatch-hex">#C4B2B8</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">URL Bar</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #FFFFFF;"></div><span class="swatch-hex">#FFFFFF</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="wallpapers-section" style="padding-top: 16px;">
+      <div class="wallpapers-label">Wallpapers</div>
+      <div class="wallpaper-gallery">
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1627621489603-d3f58fe651e3?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Pampas grass, pale pink wall</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1589307004173-3c95204d00ee?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Pink marble veins, blush</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1533628635777-112b2239b1c7?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Flat lay, dried flowers, linen</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1553774521-44a3b4c5fbbb?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Cherry blossoms, muted sky</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1538234996455-f602db299c05?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Rose concrete, shadow play</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- THEME 6: Verdant -->
+  <!-- ============================================ -->
+  <div class="theme-card">
+    <div class="theme-header">
+      <span class="theme-name">Verdant</span>
+    </div>
+    <p class="theme-mood">Deep botanical green with earthy warmth — like sunlight filtering through a greenhouse canopy. Focused and alive.</p>
+
+    <div class="browser-mockup">
+      <div class="mock-sidebar" style="background: #B4C4B0; color: #1A261A;">
+        <div class="traffic-lights">
+          <div class="traffic-dot dot-red"></div>
+          <div class="traffic-dot dot-yellow"></div>
+          <div class="traffic-dot dot-green"></div>
+        </div>
+        <div class="sidebar-section-label" style="color: #1A261A;">Tabs</div>
+        <div class="tab-item" style="background: rgba(82,124,82,0.15);">
+          <div class="tab-icon" style="background: #527C52; opacity: 0.8;"></div>
+          <span>New Tab</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #1A261A;"></div>
+          <span>GitHub</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #1A261A;"></div>
+          <span>Linear</span>
+        </div>
+        <div class="sidebar-bottom">
+          <div class="sidebar-btn" style="color: #1A261A;">+</div>
+          <div class="sidebar-btn" style="color: #1A261A;">&#9776;</div>
+          <div class="sidebar-btn" style="color: #527C52;">&#9673;</div>
+        </div>
+      </div>
+      <div class="mock-main" style="background: #B4C4B0;">
+        <div class="mock-toolbar">
+          <div class="nav-btn" style="color: #1A261A;">&#9664;</div>
+          <div class="nav-btn" style="color: #1A261A;">&#9654;</div>
+          <div class="url-bar" style="color: #1A261A; border: 1px solid #A8B8A4;">blur://newtab</div>
+        </div>
+        <div class="mock-webview">
+          <img class="webview-bg-img" src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&h=500&fit=crop&auto=format" alt="Misty forest">
+          <div class="wallpaper-scrim"></div>
+          <div class="new-tab-content">
+            <div class="new-tab-greeting">Good morning</div>
+            <div class="new-tab-search">&#128269; Search or enter URL...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section">
+      <div class="swatch-group">
+        <span class="swatch-label">Chrome</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #B4C4B0;"></div><span class="swatch-hex">#B4C4B0</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Text & Icons</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #1A261A;"></div><span class="swatch-hex">#1A261A</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Accent</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #527C52;"></div><span class="swatch-hex">#527C52</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Border</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #A8B8A4;"></div><span class="swatch-hex">#A8B8A4</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">URL Bar</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #FFFFFF;"></div><span class="swatch-hex">#FFFFFF</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="wallpapers-section" style="padding-top: 16px;">
+      <div class="wallpapers-label">Wallpapers</div>
+      <div class="wallpaper-gallery">
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Monstera leaves, water droplets</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Misty forest path, soft green</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Terraced rice paddies, emerald</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Moss on ancient stone, rain</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Greenhouse, climbing plants</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- THEME 7: Graphite -->
+  <!-- ============================================ -->
+  <div class="theme-card">
+    <div class="theme-header">
+      <span class="theme-name">Graphite</span>
+    </div>
+    <p class="theme-mood">Pure neutral — warm grays with no color bias. Professional and invisible, for when the browser should disappear behind the content.</p>
+
+    <div class="browser-mockup">
+      <div class="mock-sidebar" style="background: #C8C8C8; color: #222222;">
+        <div class="traffic-lights">
+          <div class="traffic-dot dot-red"></div>
+          <div class="traffic-dot dot-yellow"></div>
+          <div class="traffic-dot dot-green"></div>
+        </div>
+        <div class="sidebar-section-label" style="color: #222222;">Tabs</div>
+        <div class="tab-item" style="background: rgba(90,90,90,0.15);">
+          <div class="tab-icon" style="background: #5A5A5A; opacity: 0.8;"></div>
+          <span>New Tab</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #222222;"></div>
+          <span>GitHub</span>
+        </div>
+        <div class="tab-item" style="opacity: 0.6;">
+          <div class="tab-icon" style="background: #222222;"></div>
+          <span>Linear</span>
+        </div>
+        <div class="sidebar-bottom">
+          <div class="sidebar-btn" style="color: #222222;">+</div>
+          <div class="sidebar-btn" style="color: #222222;">&#9776;</div>
+          <div class="sidebar-btn" style="color: #5A5A5A;">&#9673;</div>
+        </div>
+      </div>
+      <div class="mock-main" style="background: #C8C8C8;">
+        <div class="mock-toolbar">
+          <div class="nav-btn" style="color: #222222;">&#9664;</div>
+          <div class="nav-btn" style="color: #222222;">&#9654;</div>
+          <div class="url-bar" style="color: #222222; border: 1px solid #B5B5B5;">blur://newtab</div>
+        </div>
+        <div class="mock-webview">
+          <img class="webview-bg-img" src="https://images.unsplash.com/photo-1481277542470-605612bd2d61?w=800&h=500&fit=crop&auto=format" alt="Brutalist architecture">
+          <div class="wallpaper-scrim"></div>
+          <div class="new-tab-content">
+            <div class="new-tab-greeting">Good afternoon</div>
+            <div class="new-tab-search">&#128269; Search or enter URL...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-section">
+      <div class="swatch-group">
+        <span class="swatch-label">Chrome</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #C8C8C8;"></div><span class="swatch-hex">#C8C8C8</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Text & Icons</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #222222;"></div><span class="swatch-hex">#222222</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Accent</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #5A5A5A;"></div><span class="swatch-hex">#5A5A5A</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">Border</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #B5B5B5;"></div><span class="swatch-hex">#B5B5B5</span></div>
+      </div>
+      <div class="swatch-group">
+        <span class="swatch-label">URL Bar</span>
+        <div class="swatch"><div class="swatch-circle" style="background: #FFFFFF;"></div><span class="swatch-hex">#FFFFFF</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="wallpapers-section" style="padding-top: 16px;">
+      <div class="wallpapers-label">Wallpapers</div>
+      <div class="wallpaper-gallery">
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1481277542470-605612bd2d61?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Brutalist curves, concrete</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Fog over mountain ridge</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1554147090-e1221a04a025?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Pencil strokes, textured paper</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1542338048-f5832c5ff98c?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Pebble beach, mist, gray stones</div>
+        </div>
+        <div class="wallpaper-thumb">
+          <img src="https://images.unsplash.com/photo-1679931974860-1af5ac3cc051?w=400&h=250&fit=crop&auto=format" alt="">
+          <div class="wallpaper-thumb-label">Abstract gray geometric shapes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align: center; padding: 48px 0 24px; color: #999; font-size: 12px;">
+  Blur-Browser Theme Proposals &mdash; Colors & Moods Preview &mdash;
+  <span style="color: #bbb;">Click any wallpaper to download</span>
+</div>
+
+<div id="toast" class="toast">Downloading…</div>
+
+<script>
+(function() {
+  const DOWNLOAD_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  const SPINNER_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 2 A10 10 0 0 1 22 12" /></svg>';
+  const CHECK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  const toast = document.getElementById('toast');
+  let toastTimer = null;
+
+  function showToast(message, isError) {
+    toast.textContent = message;
+    toast.classList.toggle('error', !!isError);
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
+  }
+
+  function slugify(text) {
+    return (text || 'wallpaper')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 60);
+  }
+
+  function toFullResUrl(thumbUrl) {
+    // Strip width/height/crop params, request a high-res download
+    try {
+      const u = new URL(thumbUrl);
+      u.search = '';
+      u.searchParams.set('w', '2400');
+      u.searchParams.set('q', '85');
+      u.searchParams.set('auto', 'format');
+      return u.toString();
+    } catch (e) {
+      return thumbUrl;
+    }
+  }
+
+  async function downloadImage(thumb) {
+    if (thumb.classList.contains('downloading')) return;
+
+    const img = thumb.querySelector('img');
+    const labelEl = thumb.querySelector('.wallpaper-thumb-label');
+    const iconEl = thumb.querySelector('.download-icon');
+    if (!img || !img.src) return;
+
+    const label = labelEl ? labelEl.textContent.trim() : 'wallpaper';
+    const filename = slugify(label) + '.jpg';
+    const fullResUrl = toFullResUrl(img.src);
+
+    thumb.classList.add('downloading');
+    iconEl.innerHTML = SPINNER_SVG;
+    showToast('Downloading ' + label + '…');
+
+    try {
+      const response = await fetch(fullResUrl, { mode: 'cors' });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+      thumb.classList.remove('downloading');
+      thumb.classList.add('downloaded');
+      iconEl.innerHTML = CHECK_SVG;
+      showToast('Saved ' + filename);
+
+      setTimeout(() => {
+        thumb.classList.remove('downloaded');
+        iconEl.innerHTML = DOWNLOAD_ICON_SVG;
+      }, 2000);
+    } catch (err) {
+      console.error('Download failed:', err);
+      thumb.classList.remove('downloading');
+      iconEl.innerHTML = DOWNLOAD_ICON_SVG;
+      showToast('Download failed — opening in new tab', true);
+      // Fallback: open full-res image in new tab so user can save manually
+      window.open(fullResUrl, '_blank');
+    }
+  }
+
+  document.querySelectorAll('.wallpaper-thumb').forEach(thumb => {
+    const icon = document.createElement('div');
+    icon.className = 'download-icon';
+    icon.innerHTML = DOWNLOAD_ICON_SVG;
+    thumb.appendChild(icon);
+
+    thumb.addEventListener('click', () => downloadImage(thumb));
+    thumb.setAttribute('title', 'Click to download');
+  });
+})();
+</script>
+
+</body>
+</html>
