@@ -513,6 +513,16 @@ private final class CornerMaskView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
+    // Use the layer-update path so updateLayer() is called on setNeedsDisplay.
+    // This lets reapplyTheme() re-read the chrome color after a theme switch
+    // (the CAShapeLayer's fillColor otherwise stays cached at the old value).
+    override var wantsUpdateLayer: Bool { true }
+
+    override func updateLayer() {
+        super.updateLayer()
+        maskLayer.fillColor = Colors.chromeBg.cgColor
+    }
+
     override func layout() {
         super.layout()
         let rect = bounds
