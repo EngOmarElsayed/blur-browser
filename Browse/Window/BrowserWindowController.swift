@@ -95,6 +95,15 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
                     splitVC.reapplyTheme()
                     splitVC.addressBar.applyActiveTheme()
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)
+
+                    // Propagate color scheme + reload new-tab pages so their wallpaper refreshes.
+                    let newTabURLString = AppConstants.newTabURLString
+                    for tab in tabManager.tabs {
+                        BrowserTab.syncColorScheme(tab.webView)
+                        if tab.url?.absoluteString == newTabURLString {
+                            tab.webView.reload()
+                        }
+                    }
                 }
                 let currentID = tabManager.selectedTabID
                 let currentURL = tabManager.selectedTab?.url
