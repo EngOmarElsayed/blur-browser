@@ -58,13 +58,13 @@ struct SidebarView: View {
                 onResumeDownload: onResumeDownload
             )
 
-            Divider()
-
             SidebarButtons(
                 tabAreaMode: $state.tabAreaMode,
                 downloadStore: downloadStore,
                 onToggleHistory: onToggleHistory
             )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
         }
         .background(Color(nsColor: .clear))
     }

@@ -499,7 +499,7 @@ final class WebViewController: NSViewController {
 private final class CornerMaskView: NSView {
 
     private let maskLayer = CAShapeLayer()
-    private let radius: CGFloat = 8
+    private let radius: CGFloat = 16
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)

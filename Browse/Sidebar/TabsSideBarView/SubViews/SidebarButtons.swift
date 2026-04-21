@@ -18,7 +18,7 @@ struct SidebarButtons: View {
     }
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Button {
                 tabAreaMode = .tabs
             } label: {
@@ -68,8 +68,6 @@ struct SidebarButtons: View {
             .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.top, 5)
     }
 }
 

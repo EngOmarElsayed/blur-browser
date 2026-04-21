@@ -77,7 +77,7 @@ final class MainSplitViewController: NSViewController {
 
         // -- Content container (toolbar + web view) with rounded corners --
         contentContainerView.wantsLayer = true
-        contentContainerView.layer?.cornerRadius = 8
+        contentContainerView.layer?.cornerRadius = 16
         contentContainerView.layer?.masksToBounds = true
         view.addSubview(contentContainerView)
 
@@ -181,7 +181,7 @@ final class MainSplitViewController: NSViewController {
         let toolbarHeight = Layout.toolbarHeight
         let dividerHitWidth: CGFloat = 16
         // Chrome padding — visible on right and bottom edges (left is sidebar, top is toolbar)
-        let chromeEdge: CGFloat = 12
+        let chromeEdge: CGFloat = 8
 
         // In full screen, the safe area top inset is 0 (no titlebar).
         // In windowed mode with fullSizeContentView, the titlebar occupies space at the top.

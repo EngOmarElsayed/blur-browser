@@ -60,7 +60,6 @@ enum AppConstants {
     static let defaultSearchURL = "https://www.google.com/search?q="
     static let googleSuggestURL = "https://suggestqueries.google.com/complete/search?client=firefox&q="
     static let defaultHomeURL   = "https://www.google.com"
-    static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
     static let appName = "Blur-Browser"
 }
 

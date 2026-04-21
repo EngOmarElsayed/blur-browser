@@ -38,7 +38,6 @@ final class BrowserTab: Identifiable {
 
         let config = configuration ?? Self.makeFilterConfiguration()
         let wv = WKWebView(frame: .zero, configuration: config)
-        wv.customUserAgent = AppConstants.userAgent
         wv.allowsBackForwardNavigationGestures = true
         self.webView = wv
 
@@ -127,6 +126,7 @@ final class BrowserTab: Identifiable {
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
         config.preferences.setValue(true, forKey: "fullScreenEnabled")
         config.preferences.isElementFullscreenEnabled = true
+        config.applicationNameForUserAgent = "Version/26.0 Safari/605.1.15"
 
         // Share the default (persistent) website data store across all tabs so
         // cookies, local storage, and session state survive across app launches.
