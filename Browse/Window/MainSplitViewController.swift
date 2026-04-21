@@ -859,23 +859,23 @@ final class MainSplitViewController: NSViewController {
 
     // MARK: - Theme re-render
 
-    /// Walk all theme-sensitive subviews and force a redraw.
-    /// Called by BrowserWindowController when ThemeStore.currentThemeID changes.
+    /// Invalidate every mounted view's drawing so theme-aware colors re-resolve
+    /// on the next render pass.
+    ///
+    /// Note: only colors change on a theme switch, not frames. We mark
+    /// `needsDisplay` (redraw) but never `needsLayout` (relayout) — the latter
+    /// can trigger layout cycles with `fullSizeContentView` + `NSHostingController`
+    /// (see CLAUDE.md "Layout cycle prevention").
+    ///
+    /// Views that cache theme colors in stored properties at configuration
+    /// time (e.g. the address bar) are refreshed explicitly by callers.
     func reapplyTheme() {
-        // Force the entire view tree to redraw.
-        view.needsDisplay = true
-        view.layoutSubtreeIfNeeded()
         walkAndInvalidate(view)
     }
 
     private func walkAndInvalidate(_ v: NSView) {
         v.needsDisplay = true
-        // Redraw layer-backed views
-        if let layer = v.layer {
-            layer.setNeedsDisplay()
-            // Layer-backed views with a backgroundColor set from theme need re-setting
-            v.needsLayout = true
-        }
+        v.layer?.setNeedsDisplay()
         for sub in v.subviews { walkAndInvalidate(sub) }
     }
 }
