@@ -1,16 +1,17 @@
 import Foundation
 
 /// Generates the HTML + inline CSS for the `blur://newtab` page.
-/// Colors are interpolated from the passed-in Theme; the wallpaper filename
-/// is referenced via the `blur-image://` scheme so the web view loads it
-/// from the app bundle.
+/// The page is intentionally minimal: a full-bleed wallpaper picked at random
+/// from the active theme's set, and nothing else. The user types into the
+/// existing address bar rather than an in-page field.
+/// Wallpapers are referenced via the `blur-image://` scheme so the web view
+/// loads them from the app bundle.
 enum NewTabPageHTMLBuilder {
 
-    static func html(for theme: Theme, searchPlaceholder: String = "Search or enter URL") -> String {
+    static func html(for theme: Theme) -> String {
         // Pick a random wallpaper from the theme's set
         let wallpaper = theme.wallpaperNames.randomElement() ?? theme.wallpaperNames[0]
         let wallpaperURL = "blur-image://\(wallpaper).jpg"
-        let greeting = greetingForCurrentHour()
         let colorScheme = theme.isDark ? "dark" : "light"
 
         return """
@@ -26,64 +27,11 @@ enum NewTabPageHTMLBuilder {
               width: 100%;
               height: 100%;
               overflow: hidden;
-              font-family: -apple-system, 'Inter', system-ui, sans-serif;
               background: \(theme.chromeHex);
             }
             .bg {
               position: fixed; inset: 0;
               background: url('\(wallpaperURL)') center/cover no-repeat;
-              z-index: 0;
-            }
-            .scrim {
-              position: fixed; inset: 0;
-              background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%);
-              z-index: 1;
-            }
-            .content {
-              position: relative; z-index: 2;
-              height: 100%;
-              display: flex; flex-direction: column;
-              align-items: center; justify-content: center;
-              gap: 24px;
-            }
-            .greeting {
-              color: rgba(255,255,255,0.95);
-              font-size: 32px;
-              font-weight: 500;
-              text-shadow: 0 2px 8px rgba(0,0,0,0.35);
-              letter-spacing: -0.01em;
-            }
-            .search-wrap {
-              position: relative;
-              width: min(560px, 80vw);
-            }
-            input.search {
-              width: 100%;
-              height: 52px;
-              border-radius: 14px;
-              border: 1px solid rgba(255,255,255,0.35);
-              background: rgba(255,255,255,0.95);
-              backdrop-filter: blur(24px);
-              -webkit-backdrop-filter: blur(24px);
-              padding: 0 20px 0 46px;
-              font-size: 15px;
-              color: #1a1a1a;
-              outline: none;
-              box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-              font-family: inherit;
-            }
-            input.search::placeholder { color: rgba(0,0,0,0.45); }
-            input.search:focus {
-              border-color: rgba(255,255,255,0.6);
-              box-shadow: 0 8px 32px rgba(0,0,0,0.22), 0 0 0 3px rgba(255,255,255,0.15);
-            }
-            .search-icon {
-              position: absolute;
-              left: 16px; top: 50%;
-              transform: translateY(-50%);
-              color: rgba(0,0,0,0.45);
-              pointer-events: none;
-              width: 18px; height: 18px;
             }
           </style>
         </head>
@@ -92,26 +40,5 @@ enum NewTabPageHTMLBuilder {
         </body>
         </html>
         """
-    }
-
-    private static func greetingForCurrentHour() -> String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        switch hour {
-        case 5..<12:  return "Good morning"
-        case 12..<17: return "Good afternoon"
-        case 17..<22: return "Good evening"
-        default:      return "Good night"
-        }
-    }
-
-    /// Escape HTML special characters so interpolated user-visible text can't
-    /// break the surrounding markup. All values interpolated into HTML text
-    /// content (not attributes like CSS/URL contexts) should go through this.
-    private static func htmlEscape(_ s: String) -> String {
-        s.replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&#39;")
     }
 }
