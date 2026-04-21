@@ -3,23 +3,21 @@ import AppKit
 // MARK: - Design Tokens (from Browser.pen)
 
 enum Colors {
-    // Foreground
-    static let foregroundPrimary   = NSColor(hex: "#1A1A1A")
-    static let foregroundSecondary = NSColor(hex: "#5A5E6B")
-    static let foregroundMuted     = NSColor(hex: "#00000")
-    static let foregroundInverse   = NSColor(hex: "#FFFFFF")
+    // MARK: - Theme-aware tokens (resolve through ThemeStore)
+    @MainActor static var foregroundPrimary: NSColor   { ThemeStore.shared.foregroundColor }
+    @MainActor static var foregroundSecondary: NSColor { ThemeStore.shared.foregroundColor.withAlphaComponent(0.7) }
+    @MainActor static var foregroundMuted: NSColor     { ThemeStore.shared.foregroundColor.withAlphaComponent(0.55) }
+    @MainActor static var accentPrimary: NSColor       { ThemeStore.shared.accentColor }
+    @MainActor static var borderLight: NSColor         { ThemeStore.shared.borderColor }
+    @MainActor static var hoverBg: NSColor             { ThemeStore.shared.accentColor.withAlphaComponent(0.12) }
+    @MainActor static var sidebarBg: NSColor           { ThemeStore.shared.chromeColor }
+    @MainActor static var chromeBg: NSColor            { ThemeStore.shared.chromeColor }
 
-    // Surfaces
-    static let surfacePrimary   = NSColor(hex: "#FFFFFF")
-    static let surfaceSecondary = NSColor(hex: "#EAECF5")
-    static let surfaceInverse   = NSColor(hex: "#0A0A0A")
-
-    // UI
-    static let accentPrimary = NSColor(hex: "#6366F1")
-    static let borderLight   = NSColor(hex: "#C5CAE0")
-    static let hoverBg       = NSColor(hex: "#D0D5EB")
-    static let sidebarBg     = NSColor(hex: "#B8BFD9")
-    static let chromeBg      = NSColor(hex: "#92b4f4")
+    // MARK: - Static (non-themed) tokens
+    static let foregroundInverse = NSColor(hex: "#FFFFFF")
+    static let surfacePrimary    = NSColor(hex: "#FFFFFF")
+    static let surfaceSecondary  = NSColor(hex: "#F7F8FA")
+    static let surfaceInverse    = NSColor(hex: "#0A0A0A")
 }
 
 // MARK: - Layout Constants
@@ -66,20 +64,23 @@ enum AppConstants {
 // MARK: - Settings Colors (SwiftUI)
 
 enum SettingsColors {
-    static let chrome = Color(hex: "#C4CBE3")
-    static let windowBorder = Color(hex: "#9BA3C4")
-    static let surface = Color.white
-    static let borderLight = Color(hex: "#C5CAE0")
-    static let accent = Color(hex: "#6366F1")
-    static let fgPrimary = Color(hex: "#1A1A1A")
-    static let fgSecondary = Color(hex: "#5A5E6B")
-    static let hover = Color(hex: "#D0D5EB")
-    static let danger = Color(hex: "#EF4444")
-    static let allowGreen = Color(hex: "#22C55E")
-    static let denyRed = Color(hex: "#EF4444")
-    static let trafficRed = Color(hex: "#FF5F57")
+    // MARK: - Theme-aware tokens
+    @MainActor static var chrome: Color       { Color(nsColor: ThemeStore.shared.chromeColor) }
+    @MainActor static var windowBorder: Color { Color(nsColor: ThemeStore.shared.borderColor) }
+    @MainActor static var borderLight: Color  { Color(nsColor: ThemeStore.shared.borderColor) }
+    @MainActor static var accent: Color       { Color(nsColor: ThemeStore.shared.accentColor) }
+    @MainActor static var fgPrimary: Color    { Color(nsColor: ThemeStore.shared.foregroundColor) }
+    @MainActor static var fgSecondary: Color  { Color(nsColor: ThemeStore.shared.foregroundColor).opacity(0.7) }
+    @MainActor static var hover: Color        { Color(nsColor: ThemeStore.shared.accentColor).opacity(0.12) }
+
+    // MARK: - Static (non-themed)
+    static let surface       = Color.white
+    static let danger        = Color(hex: "#EF4444")
+    static let allowGreen    = Color(hex: "#22C55E")
+    static let denyRed       = Color(hex: "#EF4444")
+    static let trafficRed    = Color(hex: "#FF5F57")
     static let trafficYellow = Color(hex: "#FEBC2E")
-    static let trafficGreen = Color(hex: "#28C840")
+    static let trafficGreen  = Color(hex: "#28C840")
 }
 
 // MARK: - SwiftUI Color Hex Extension
