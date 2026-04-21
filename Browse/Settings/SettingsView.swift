@@ -2,6 +2,7 @@ import SwiftUI
 
 enum SettingsTab: String, CaseIterable {
     case general = "General"
+    case appearance = "Appearance"
     case privacy = "Privacy"
     case permissions = "Permissions"
     case shortcuts = "Shortcuts"
@@ -109,6 +110,8 @@ struct SettingsView: View {
                 switch selectedTab {
                 case .general:
                     GeneralSettingsView()
+                case .appearance:
+                    AppearanceSettingsView()
                 case .privacy:
                     PrivacySettingsView()
                 case .permissions:
