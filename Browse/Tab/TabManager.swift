@@ -61,6 +61,15 @@ final class TabManager {
             wv.setMicrophoneCaptureState(.none)
         }
 
+        // Stop any media playback (audio/video) before the tab goes away.
+        // WKWebView retains the media session even after removal from the view
+        // hierarchy, so we have to explicitly pause. `pauseAllMediaPlayback`
+        // handles HTML5 video/audio across all frames.
+        wv.pauseAllMediaPlayback()
+        // Also load about:blank to tear down the page entirely (safety net for
+        // sites that drive audio via Web Audio or other non-media-element paths).
+        wv.load(URLRequest(url: URL(string: "about:blank")!))
+
         tabs.remove(at: index)
 
         if wasSelected {

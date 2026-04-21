@@ -35,6 +35,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Save session before quitting
         if let wc = windowController {
             TabSessionStore.save(tabManager: wc.tabManager)
+            // Cancel any in-progress downloads so we don't leave orphan partial
+            // files around. Documented choice: simplicity > resume-on-relaunch.
+            wc.downloadManager.cancelAll()
         }
 
         // Persist cookies so login sessions survive app relaunches
@@ -160,6 +163,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func toggleEasyRead(_ sender: Any?) {
         guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
         wc.toggleReaderMode()
+    }
+
+    @objc func showKeyboardShortcuts(_ sender: Any?) {
+        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
+        wc.toggleShortcutsOverlay()
+    }
+
+    @objc func showDownloads(_ sender: Any?) {
+        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
+        wc.showDownloadsInSidebar()
     }
 
     @objc func selectTab1(_ sender: Any?) { selectTab(at: 0) }

@@ -59,7 +59,7 @@ enum AppMenuBuilder {
         let viewMenu = NSMenu(title: "View")
         addItem(to: viewMenu, title: "Toggle Sidebar", action: #selector(AppDelegate.toggleSidebar(_:)), key: "\\", target: delegate)
         addItem(to: viewMenu, title: "Toggle Sidebar (Alt)", action: #selector(AppDelegate.toggleSidebar(_:)), key: "\\", modifiers: [.command, .shift], target: delegate)
-        addItem(to: viewMenu, title: "Focus Mode", action: #selector(AppDelegate.focusMode(_:)), key: "F", modifiers: [.command, .shift], target: delegate)
+        addItem(to: viewMenu, title: "Zen Mode", action: #selector(AppDelegate.focusMode(_:)), key: "F", modifiers: [.command, .shift], target: delegate)
         addItem(to: viewMenu, title: "Toggle Address Bar", action: #selector(AppDelegate.toggleAddressBar(_:)), key: "a", modifiers: [.command, .shift], target: delegate)
         viewMenu.addItem(.separator())
         addItem(to: viewMenu, title: "Reload", action: #selector(AppDelegate.reloadPage(_:)), key: "r", target: delegate)
@@ -67,6 +67,7 @@ enum AppMenuBuilder {
         viewMenu.addItem(.separator())
         addItem(to: viewMenu, title: "Web Inspector", action: #selector(AppDelegate.toggleInspector(_:)), key: "c", modifiers: [.command, .option], target: delegate)
         addItem(to: viewMenu, title: "Easy Read", action: #selector(AppDelegate.toggleEasyRead(_:)), key: "E", modifiers: [.command, .shift], target: delegate)
+        addItem(to: viewMenu, title: "Show Downloads", action: #selector(AppDelegate.showDownloads(_:)), key: "l", modifiers: [.command, .option], target: delegate)
         let viewMenuItem = NSMenuItem()
         viewMenuItem.submenu = viewMenu
         mainMenu.addItem(viewMenuItem)
@@ -109,6 +110,7 @@ enum AppMenuBuilder {
 
         // Help menu
         let helpMenu = NSMenu(title: "Help")
+        addItem(to: helpMenu, title: "Keyboard Shortcuts", action: #selector(AppDelegate.showKeyboardShortcuts(_:)), key: "/", target: delegate)
         let helpMenuItem = NSMenuItem()
         helpMenuItem.submenu = helpMenu
         mainMenu.addItem(helpMenuItem)

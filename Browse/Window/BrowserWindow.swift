@@ -50,4 +50,13 @@ final class BrowserWindow: NSWindow {
     // Required for traffic lights to render in their active (colored) state
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    // Silently swallow key events that bubble up to the window unhandled.
+    // WKWebView processes keys like arrow keys for in-page scrolling/video
+    // seeking, but returns without marking the event as consumed — which causes
+    // NSResponder's default behavior to beep. Overriding here prevents the beep
+    // while still letting menu shortcuts work (they go through performKeyEquivalent).
+    override func keyDown(with event: NSEvent) {
+        // no-op — do NOT call super which triggers NSBeep via noResponder(for:)
+    }
 }

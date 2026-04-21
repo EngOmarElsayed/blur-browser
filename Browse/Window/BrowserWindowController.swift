@@ -6,6 +6,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
 
     let tabManager = TabManager()
     let historyStore = HistoryStore()
+    let downloadStore = DownloadStore()
+    private(set) var downloadManager: DownloadManager!
 
     private var splitVC: MainSplitViewController!
     private var quickSearchOverlay: QuickSearchOverlay?
@@ -31,11 +33,22 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         // Restore pinned tabs from SwiftData (always, after JSON restore so they aren't wiped)
         tabManager.restorePinnedTabs()
 
-        splitVC = MainSplitViewController(tabManager: tabManager, historyStore: historyStore)
+        downloadManager = DownloadManager(store: downloadStore)
+
+        splitVC = MainSplitViewController(
+            tabManager: tabManager,
+            historyStore: historyStore,
+            downloadStore: downloadStore,
+            downloadManager: downloadManager
+        )
         splitVC.webViewController.onNewTabRequested = { [weak self] url in
             self?.tabManager.addNewTab(url: url)
         }
         splitVC.webViewController.setHistoryStore(historyStore)
+        // DownloadManager needs the WebViewController to present the confirmation alert
+        downloadManager.webViewController = splitVC.webViewController
+        // WebViewController needs to know the DownloadManager so WebViewCoordinator can hand off
+        splitVC.webViewController.setDownloadManager(downloadManager)
 
         // Create the quick search overlay and hand it to the web view controller
         let overlay = QuickSearchOverlay(tabManager: tabManager, historyStore: historyStore)
@@ -71,11 +84,20 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
             var lastURL: URL?
             var lastProgress: Double = 0
             var lastLoading: Bool = false
+            var lastDownloadSignature: String = ""
             while !Task.isCancelled {
                 let currentID = tabManager.selectedTabID
                 let currentURL = tabManager.selectedTab?.url
                 let currentProgress = tabManager.selectedTab?.estimatedProgress ?? 0
                 let currentLoading = tabManager.selectedTab?.isLoading ?? false
+
+                // Signature that changes when download state changes (active count,
+                // per-item progress, status transitions)
+                let downloadSig = downloadStore.items.map { "\($0.id):\($0.statusRaw):\($0.completedBytes)" }.joined(separator: ",")
+                if downloadSig != lastDownloadSignature {
+                    lastDownloadSignature = downloadSig
+                    splitVC.refreshDownloadsToast()
+                }
 
                 if currentID != lastID {
                     lastID = currentID
@@ -178,6 +200,14 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
 
     func toggleReaderMode() {
         splitVC.toggleReaderMode()
+    }
+
+    func showDownloadsInSidebar() {
+        splitVC.showDownloadsInSidebar()
+    }
+
+    func toggleShortcutsOverlay() {
+        splitVC.toggleShortcutsOverlay()
     }
 
     func nextTab() {

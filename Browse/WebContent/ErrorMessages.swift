@@ -24,6 +24,14 @@ struct BrowsingError {
             return nil
         }
 
+        // When WKWebView turns a navigation into a download (or another policy
+        // change cancels the navigation), it fires didFailProvisionalNavigation
+        // with WebKitErrorFrameLoadInterruptedByPolicyChange (102). This is
+        // expected behavior, NOT an error — don't show an error page.
+        if error.domain == "WebKitErrorDomain" && error.code == 102 {
+            return nil
+        }
+
         let category = classify(error)
         let message = ErrorMessageBank.randomMessage(for: category)
 

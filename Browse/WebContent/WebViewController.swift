@@ -49,6 +49,10 @@ final class WebViewController: NSViewController {
         self.quickSearchOverlay = overlay
     }
 
+    func setDownloadManager(_ manager: DownloadManager) {
+        coordinator.downloadManager = manager
+    }
+
     func displayTab(_ tab: BrowserTab?) {
         // Reset reader availability for the new tab (we'll re-check on navigation finish)
         onReaderAvailabilityChanged?(false)
@@ -244,6 +248,41 @@ final class WebViewController: NSViewController {
         )
 
         // Animate in
+        dialog.alphaValue = 0
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            dialog.animator().alphaValue = 1
+        }
+    }
+
+    // MARK: - Download Confirmation
+
+    private var currentDownloadDialog: DownloadConfirmationView?
+
+    func showDownloadConfirmation(
+        filename: String,
+        host: String?,
+        expectedSize: Int64?,
+        completion: @escaping (Bool) -> Void
+    ) {
+        currentDownloadDialog?.removeFromSuperview()
+
+        let dialog = DownloadConfirmationView(filename: filename, host: host, expectedSize: expectedSize)
+        dialog.onAllow = { completion(true) }
+        dialog.onDeny = { completion(false) }
+
+        view.addSubview(dialog)
+        currentDownloadDialog = dialog
+
+        let w = DownloadConfirmationView.panelWidth
+        let h = DownloadConfirmationView.panelHeight
+        dialog.frame = NSRect(
+            x: (view.bounds.width - w) / 2,
+            y: (view.bounds.height - h) / 2,
+            width: w,
+            height: h
+        )
+
         dialog.alphaValue = 0
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.2

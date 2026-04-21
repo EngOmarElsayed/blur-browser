@@ -6,6 +6,8 @@ final class MainSplitViewController: NSViewController {
 
     let tabManager: TabManager
     let historyStore: HistoryStore
+    let downloadStore: DownloadStore
+    let downloadManager: DownloadManager
     let webViewController: WebViewController
     let addressBar: AddressBarViewController
 
@@ -29,14 +31,33 @@ final class MainSplitViewController: NSViewController {
     private var readerOverlay: ReaderModeView?
     private var readerDimView: GaussianBlurView?
     private var readerDimTopConstraint: NSLayoutConstraint?
+    private var shortcutsOverlayHosting: NSHostingController<ShortcutsOverlayView>?
+    private var shortcutsDimView: GaussianBlurView?
+    private var shortcutsKeyMonitor: Any?
+    private var downloadsToastHosting: NSHostingController<DownloadsToastView>?
+    private var downloadsToastAutoDismissTask: Task<Void, Never>?
+    /// IDs of downloads currently visible in the toast. Includes in-progress,
+    /// paused, and recently-finished downloads until the user dismisses them.
+    private var toastVisibleIDs: Set<UUID> = []
+    /// IDs we've already tracked at least once for the toast — used so that
+    /// dismissing an in-progress item doesn't immediately re-add it on the next
+    /// refresh. Only brand-new downloads get auto-added.
+    private var toastKnownIDs: Set<UUID> = []
 
     /// Blur radius for the reader-mode dim (live CAFilter Gaussian blur).
     /// Tune this to taste.
     private let readerBlurRadius: CGFloat = 8
 
-    init(tabManager: TabManager, historyStore: HistoryStore) {
+    init(
+        tabManager: TabManager,
+        historyStore: HistoryStore,
+        downloadStore: DownloadStore,
+        downloadManager: DownloadManager
+    ) {
         self.tabManager = tabManager
         self.historyStore = historyStore
+        self.downloadStore = downloadStore
+        self.downloadManager = downloadManager
         self.webViewController = WebViewController(tabManager: tabManager)
         self.addressBar = AddressBarViewController(tabManager: tabManager)
         super.init(nibName: nil, bundle: nil)
@@ -81,9 +102,23 @@ final class MainSplitViewController: NSViewController {
         contentContainerView.addSubview(webViewController.view)
 
         // -- Left sidebar --
-        sidebarVC = SidebarViewController(tabManager: tabManager, historyStore: historyStore)
+        sidebarVC = SidebarViewController(
+            tabManager: tabManager,
+            historyStore: historyStore,
+            downloadStore: downloadStore
+        )
         sidebarVC.onToggleHistory = { [weak self] in
             self?.toggleHistoryMode()
+        }
+        sidebarVC.onCancelDownload = { [weak self] id in
+            self?.downloadManager.cancelDownload(id: id)
+        }
+        sidebarVC.onPauseDownload = { [weak self] id in
+            self?.downloadManager.pauseDownload(id: id)
+        }
+        sidebarVC.onResumeDownload = { [weak self] id in
+            guard let self, let webView = self.tabManager.selectedTab?.webView else { return }
+            self.downloadManager.resumeDownload(id: id, using: webView)
         }
         addChild(sidebarVC)
         view.addSubview(sidebarVC.view)
@@ -403,6 +438,17 @@ final class MainSplitViewController: NSViewController {
         }
     }
 
+    // MARK: - Sidebar Mode
+
+    /// Toggle the sidebar between Tabs and Downloads. Auto-expands the sidebar
+    /// if it's currently collapsed so the list is actually visible.
+    func showDownloadsInSidebar() {
+        if isSidebarCollapsed {
+            toggleSidebar()
+        }
+        sidebarVC.toggleDownloads()
+    }
+
     // MARK: - Reader Mode
 
     func toggleReaderMode() {
@@ -588,6 +634,211 @@ final class MainSplitViewController: NSViewController {
             unmountReaderOverlay(animated: false)
             addressBar.setReaderActive(false)
         }
+    }
+
+    // MARK: - Downloads Toast
+
+    /// Call whenever download state changes — mounts/dismisses the toast as needed.
+    func refreshDownloadsToast() {
+        // Auto-add only BRAND-NEW downloads (never seen before). If the user
+        // dismissed an in-progress one earlier, it stays dismissed.
+        let storeIDs = Set(downloadStore.items.map(\.id))
+        for item in downloadStore.items {
+            if !toastKnownIDs.contains(item.id) {
+                toastKnownIDs.insert(item.id)
+                if item.status == .inProgress || item.status == .paused {
+                    toastVisibleIDs.insert(item.id)
+                }
+            }
+        }
+        // Drop IDs for downloads that no longer exist in the store (e.g. removed
+        // from the sidebar downloads panel).
+        toastKnownIDs.formIntersection(storeIDs)
+        toastVisibleIDs.formIntersection(storeIDs)
+
+        // Build the list of items to show in their original store order
+        let visibleItems = downloadStore.items.filter { toastVisibleIDs.contains($0.id) }
+
+        if visibleItems.isEmpty {
+            dismissDownloadsToast()
+            return
+        }
+
+        presentOrUpdateDownloadsToast(items: visibleItems)
+
+        // Auto-dismiss only when ALL items have reached a terminal state
+        // (completed/failed/cancelled) — not while there's still anything in-progress/paused.
+        let hasActive = visibleItems.contains(where: { $0.status == .inProgress || $0.status == .paused })
+        if hasActive {
+            downloadsToastAutoDismissTask?.cancel()
+            downloadsToastAutoDismissTask = nil
+        } else {
+            downloadsToastAutoDismissTask?.cancel()
+            downloadsToastAutoDismissTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(6))
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    self?.toastVisibleIDs.removeAll()
+                    self?.dismissDownloadsToast()
+                }
+            }
+        }
+    }
+
+    private func presentOrUpdateDownloadsToast(items: [DownloadItem]) {
+        let toastView = DownloadsToastView(
+            items: items,
+            onDismiss: { [weak self] in
+                // Hide the whole toast window. All currently-visible items stay
+                // in toastKnownIDs so they won't be re-added on subsequent refreshes;
+                // only BRAND-NEW downloads will re-open the toast.
+                guard let self else { return }
+                self.toastVisibleIDs.removeAll()
+                self.downloadsToastAutoDismissTask?.cancel()
+                self.downloadsToastAutoDismissTask = nil
+                self.dismissDownloadsToast()
+            },
+            onCancel: { [weak self] id in
+                self?.downloadManager.cancelDownload(id: id)
+                // Keep in the toast briefly so the user sees the "Cancelled" state.
+                self?.refreshDownloadsToast()
+            },
+            onPause: { [weak self] id in
+                self?.downloadManager.pauseDownload(id: id)
+                self?.refreshDownloadsToast()
+            },
+            onResume: { [weak self] id in
+                guard let self, let webView = self.tabManager.selectedTab?.webView else { return }
+                self.downloadManager.resumeDownload(id: id, using: webView)
+                self.refreshDownloadsToast()
+            },
+            onReveal: { url in
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+        )
+
+        if let existing = downloadsToastHosting {
+            existing.rootView = toastView
+            return
+        }
+
+        let hosting = NSHostingController(rootView: toastView)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        contentContainerView.addSubview(hosting.view)
+
+        NSLayoutConstraint.activate([
+            hosting.view.trailingAnchor.constraint(equalTo: contentContainerView.trailingAnchor, constant: -20),
+            hosting.view.bottomAnchor.constraint(equalTo: contentContainerView.bottomAnchor, constant: -20),
+        ])
+
+        downloadsToastHosting = hosting
+
+        // Animate in — slide from right + fade
+        hosting.view.alphaValue = 0
+        hosting.view.layer?.transform = CATransform3DMakeTranslation(20, 0, 0)
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.25
+            hosting.view.animator().alphaValue = 1
+            hosting.view.layer?.transform = CATransform3DIdentity
+        }, completionHandler: nil)
+    }
+
+    private func dismissDownloadsToast() {
+        guard let hosting = downloadsToastHosting else { return }
+        downloadsToastHosting = nil
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.2
+            hosting.view.animator().alphaValue = 0
+        }, completionHandler: {
+            hosting.view.removeFromSuperview()
+        })
+    }
+
+    // MARK: - Keyboard Shortcuts Cheat Sheet
+
+    func toggleShortcutsOverlay() {
+        if shortcutsOverlayHosting != nil {
+            dismissShortcutsOverlay()
+        } else {
+            presentShortcutsOverlay()
+        }
+    }
+
+    private func presentShortcutsOverlay() {
+        // Live Gaussian blur background (same as reader mode) — click to dismiss
+        let dim = GaussianBlurView(radius: readerBlurRadius)
+        dim.wantsLayer = true
+        dim.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(dim, positioned: .above, relativeTo: nil)
+        NSLayoutConstraint.activate([
+            dim.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            dim.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            dim.topAnchor.constraint(equalTo: view.topAnchor),
+            dim.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+        let click = NSClickGestureRecognizer(target: self, action: #selector(shortcutsDimClicked))
+        dim.addGestureRecognizer(click)
+        shortcutsDimView = dim
+
+        // SwiftUI panel
+        let swiftUIView = ShortcutsOverlayView { [weak self] in
+            self?.dismissShortcutsOverlay()
+        }
+        let hosting = NSHostingController(rootView: swiftUIView)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hosting.view, positioned: .above, relativeTo: dim)
+
+        NSLayoutConstraint.activate([
+            hosting.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            hosting.view.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            hosting.view.widthAnchor.constraint(equalToConstant: 640),
+            hosting.view.heightAnchor.constraint(lessThanOrEqualTo: view.heightAnchor, constant: -80),
+            hosting.view.heightAnchor.constraint(equalToConstant: 520),
+        ])
+        shortcutsOverlayHosting = hosting
+
+        // ESC to dismiss (local monitor — the overlay is in our own app)
+        shortcutsKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 { // ESC
+                self?.dismissShortcutsOverlay()
+                return nil
+            }
+            return event
+        }
+
+        // Animate in
+        dim.alphaValue = 0
+        hosting.view.alphaValue = 0
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.18
+            dim.animator().alphaValue = 1
+            hosting.view.animator().alphaValue = 1
+        }, completionHandler: nil)
+    }
+
+    @objc private func shortcutsDimClicked() {
+        dismissShortcutsOverlay()
+    }
+
+    private func dismissShortcutsOverlay() {
+        let hosting = shortcutsOverlayHosting
+        let dim = shortcutsDimView
+        shortcutsOverlayHosting = nil
+        shortcutsDimView = nil
+
+        if let monitor = shortcutsKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+            shortcutsKeyMonitor = nil
+        }
+
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.15
+            hosting?.view.animator().alphaValue = 0
+            dim?.animator().alphaValue = 0
+        }, completionHandler: {
+            hosting?.view.removeFromSuperview()
+            dim?.removeFromSuperview()
+        })
     }
 
     // MARK: - Divider Drag

@@ -61,7 +61,6 @@
 			);
 			name = "Blur-Browser";
 			packageProductDependencies = (
-				41B487EC2F8F731C00C19BE3 /* AsyncImage */,
 			);
 			productName = Browse;
 			productReference = D09FFA50AAE51F3CF26B8687 /* Blur-Browser.app */;
@@ -87,7 +86,6 @@
 			mainGroup = CAD4B463BB7B4C9B98406E5B;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				41B487EB2F8F731C00C19BE3 /* XCRemoteSwiftPackageReference "AsyncImage" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -194,7 +192,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9PYC9KWKRS;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
 				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
 				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
 				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
@@ -229,6 +227,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
 			};
@@ -303,7 +302,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9PYC9KWKRS;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readonly;
+				ENABLE_FILE_ACCESS_DOWNLOADS_FOLDER = readwrite;
 				ENABLE_FILE_ACCESS_MOVIES_FOLDER = readonly;
 				ENABLE_FILE_ACCESS_MUSIC_FOLDER = readonly;
 				ENABLE_FILE_ACCESS_PICTURE_FOLDER = readonly;
@@ -337,6 +336,7 @@
 				PRODUCT_NAME = "Blur-Browser";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
+				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
 			};
@@ -364,25 +364,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		41B487EB2F8F731C00C19BE3 /* XCRemoteSwiftPackageReference "AsyncImage" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/EngOmarElsayed/AsyncImage";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.3.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		41B487EC2F8F731C00C19BE3 /* AsyncImage */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 41B487EB2F8F731C00C19BE3 /* XCRemoteSwiftPackageReference "AsyncImage" */;
-			productName = AsyncImage;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 6204D62CC20420C2115DF85B /* Project object */;
 }

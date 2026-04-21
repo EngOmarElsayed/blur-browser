@@ -29,7 +29,8 @@ struct PinnedTabItemView: View {
                 )
 
             // Favicon or letter fallback
-            faviconView
+            FaviconView(faviconURL: tab.faviconURL)
+                .id(tab.faviconURL)
         }
         .frame(width: 35, height: 35)
         .scaleEffect(isHovered ? 1.05 : 1.0)
@@ -43,44 +44,5 @@ struct PinnedTabItemView: View {
             Button("Duplicate Tab", action: onDuplicate)
         }
         .help(tab.displayTitle)
-    }
-
-    // MARK: - Favicon
-
-    @ViewBuilder
-    private var faviconView: some View {
-        if let image = tab.faviconImage {
-            Image(nsImage: image)
-                .resizable()
-                .frame(width: 15, height: 15)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-        } else if let faviconURL = tab.faviconURL {
-            AsyncImage(url: faviconURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .frame(width: 15, height: 15)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                default:
-                    letterFallback
-                }
-            }
-        } else {
-            letterFallback
-        }
-    }
-
-    private var letterFallback: some View {
-        Text(domainInitial)
-            .font(.system(size: 16, weight: .semibold, design: .rounded))
-            .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
-    }
-
-    private var domainInitial: String {
-        let host = tab.url?.host ?? ""
-        // Strip "www." prefix
-        let clean = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-        return clean.first.map(String.init)?.uppercased() ?? "?"
     }
 }

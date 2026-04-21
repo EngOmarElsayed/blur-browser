@@ -4,6 +4,7 @@ import WebKit
 final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKScriptMessageHandlerWithReply {
 
     weak var viewController: WebViewController?
+    weak var downloadManager: DownloadManager?
 
     private let filter = ContentFilterService.shared
     private var processedElementIds = Set<String>()
@@ -259,6 +260,88 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
 
         decisionHandler(.allow)
     }
+
+    // MARK: - Download detection
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationResponsePolicy) -> Void
+    ) {
+        let response = navigationResponse.response
+        let mime = response.mimeType ?? ""
+        let isDownloadableMime = Self.downloadableMimeTypes.contains(mime)
+
+        var contentDisposition = ""
+        if let httpResponse = response as? HTTPURLResponse,
+           let disp = httpResponse.value(forHTTPHeaderField: "Content-Disposition") {
+            contentDisposition = disp
+        }
+        let hasAttachment = contentDisposition.lowercased().contains("attachment")
+
+        // If the web view can't render the MIME type OR the server explicitly
+        // flagged it as an attachment → turn into a download.
+        if hasAttachment || isDownloadableMime || !navigationResponse.canShowMIMEType {
+            decisionHandler(.download)
+            return
+        }
+        decisionHandler(.allow)
+    }
+
+    /// Called when a navigation action becomes a download (e.g. <a download> links).
+    func webView(
+        _ webView: WKWebView,
+        navigationAction: WKNavigationAction,
+        didBecome download: WKDownload
+    ) {
+        let url = navigationAction.request.url ?? webView.url
+        let expected = navigationAction.request.value(forHTTPHeaderField: "Content-Length").flatMap { Int64($0) }
+        downloadManager?.beginDownload(download, sourceURL: url, expectedSize: expected)
+        revertTabURLAfterDownload(webView: webView)
+    }
+
+    /// Called when a navigation response becomes a download (attachment/unknown MIME).
+    func webView(
+        _ webView: WKWebView,
+        navigationResponse: WKNavigationResponse,
+        didBecome download: WKDownload
+    ) {
+        let url = webView.url
+        let expected: Int64? = {
+            let len = navigationResponse.response.expectedContentLength
+            return len > 0 ? len : nil
+        }()
+        downloadManager?.beginDownload(download, sourceURL: url, expectedSize: expected)
+        revertTabURLAfterDownload(webView: webView)
+    }
+
+    /// We optimistically update `tab.url` in `decidePolicyFor navigationAction` so
+    /// the address bar reflects the target URL as soon as navigation begins.
+    /// When that navigation is promoted to a download, it never commits — the
+    /// user stayed on the previous page (or on no page at all for a fresh tab).
+    /// Revert `tab.url` to the web view's last committed URL (which may be nil
+    /// for a fresh tab — that's correct, the address bar should be blank in that
+    /// case, not show the download URL).
+    private func revertTabURLAfterDownload(webView: WKWebView) {
+        guard let tab = viewController?.tabForWebView(webView) else { return }
+        tab.url = webView.url
+    }
+
+    /// MIME types we always treat as downloads even if WKWebView could render them.
+    private static let downloadableMimeTypes: Set<String> = [
+        "application/octet-stream",
+        "application/zip",
+        "application/x-zip-compressed",
+        "application/x-gzip",
+        "application/x-tar",
+        "application/x-7z-compressed",
+        "application/x-rar-compressed",
+        "application/x-bzip2",
+        "application/vnd.microsoft.portable-executable",
+        "application/x-msdownload",
+        "application/x-apple-diskimage",
+        "application/java-archive",
+    ]
 
     // MARK: - WKUIDelegate
 

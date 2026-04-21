@@ -13,7 +13,8 @@ struct TabItemView: View {
     var body: some View {
         HStack(spacing: 10) {
             // Favicon
-            faviconView
+            FaviconView(faviconURL: tab.faviconURL)
+                .id(tab.faviconURL)
 
             // Title
             Text(tab.displayTitle)
@@ -70,40 +71,5 @@ struct TabItemView: View {
             Divider()
             Button("Duplicate Tab", action: onDuplicate)
         }
-    }
-
-    @ViewBuilder
-    private var faviconView: some View {
-        if let image = tab.faviconImage {
-            Image(nsImage: image)
-                .resizable()
-                .frame(width: 16, height: 16)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
-        } else if let faviconURL = tab.faviconURL {
-            AsyncImage(url: faviconURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .frame(width: 16, height: 16)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
-                default:
-                    globePlaceholder
-                }
-            }
-        } else {
-            globePlaceholder
-        }
-    }
-
-    private var globePlaceholder: some View {
-        RoundedRectangle(cornerRadius: 3)
-            .fill(Color(nsColor: Colors.borderLight).opacity(0.5))
-            .frame(width: 16, height: 16)
-            .overlay(
-                Image(systemName: "globe")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-            )
     }
 }
