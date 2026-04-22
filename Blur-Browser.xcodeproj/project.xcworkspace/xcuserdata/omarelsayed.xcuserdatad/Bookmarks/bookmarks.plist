@@ -82,15 +82,15 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>        layoutFindBar()
+				<string>
 </string>
 				<key>leading</key>
-				<string>        findController = controller
-        view.addSubview(bar)
+				<string>        tabManager.tabs.first(where: { $0.webView === webView })
+    }
 </string>
 				<key>trailing</key>
-				<string>        layoutCurrentWebView()
-        bar.focusSearchField()
+				<string>    func openURLInNewTab(_ url: URL) {
+        onNewTabRequested?(url)
     }
 </string>
 			</dict>
