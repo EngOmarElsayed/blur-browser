@@ -14,6 +14,10 @@ build/
 *.xcscmblueprint
 *.xccheckout
 
+# Release build artifacts (DMGs, archives)
+release/
+*.dmg
+
 # Swift Package Manager
 .build/
 .swiftpm/
