@@ -136,7 +136,10 @@ final class BrowserTab: Identifiable {
     }
 
     var displayURL: String {
-        url?.absoluteString ?? ""
+        // Internal new-tab URL is an implementation detail — show an empty
+        // address bar so the placeholder ("Search or enter URL...") is visible.
+        if url == AppConstants.newTabURL { return "" }
+        return url?.absoluteString ?? ""
     }
 
     /// Favicon URL derived from the current page's host using Google's favicon service.

@@ -1,15 +1,31 @@
+import Image from "next/image";
+
 export function About() {
   return (
     <section id="about" className="border-t border-border/50 bg-chrome/30">
       <div className="mx-auto max-w-6xl px-6 py-24">
         <div className="grid gap-16 md:grid-cols-2 md:gap-24">
-          <div>
+          <div className="flex flex-col items-start">
             <div className="mb-4 text-xs font-semibold uppercase tracking-widest text-accent">
               About
             </div>
             <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               A quieter, safer web.
             </h2>
+            <div
+              className="relative mt-10"
+              style={{
+                filter: "drop-shadow(0 20px 40px rgb(var(--accent) / 0.25))",
+              }}
+            >
+              <Image
+                src="/logo.png"
+                alt="Blur Browser icon"
+                width={160}
+                height={160}
+                className="rounded-[36px]"
+              />
+            </div>
           </div>
 
           <div className="space-y-6 text-lg text-foreground/80 leading-relaxed">

@@ -58,12 +58,16 @@ export function Hero() {
             </Link>
           </div>
 
-          <div className="mt-16 w-full max-w-4xl">
-            <div className="aspect-[16/10] w-full rounded-2xl border border-border/60 bg-chrome/50 shadow-2xl overflow-hidden">
-              {/* Placeholder: drop a real screenshot at /public/screenshots/hero.png and swap this. */}
-              <div className="h-full w-full flex items-center justify-center text-foreground/40 text-sm">
-                App screenshot
-              </div>
+          <div className="mt-16 w-full max-w-5xl">
+            <div className="relative aspect-[2778/1672] w-full overflow-hidden rounded-2xl border border-border/60 bg-chrome/50 shadow-2xl">
+              <Image
+                src="/main.png"
+                alt="Blur Browser main window"
+                fill
+                sizes="(min-width: 1024px) 1024px, 100vw"
+                className="object-cover"
+                priority
+              />
             </div>
           </div>
         </div>
