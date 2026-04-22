@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const WEB3FORMS_ACCESS_KEY =
-  process.env.NEXT_PUBLIC_WEB3FORMS_KEY ?? "YOUR_WEB3FORMS_ACCESS_KEY";
+  process.env.NEXT_PUBLIC_WEB3FORMS_KEY ?? "9e18876f-70da-44ef-a8ba-a7038f6204af";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
