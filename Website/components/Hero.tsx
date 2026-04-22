@@ -1,7 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getLatestRelease } from "@/lib/github";
 
-export function Hero() {
+export async function Hero() {
+  const release = await getLatestRelease();
+
   return (
     <section className="relative overflow-hidden">
       <div
@@ -45,7 +48,7 @@ export function Hero() {
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             <a
-              href="https://github.com/EngOmarElsayed/blur-browser/releases/download/v0.7.0/Blur-Browser-v0.7.0.dmg"
+              href={release.dmgUrl}
               className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 transition"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -62,12 +65,12 @@ export function Hero() {
           </div>
 
           <a
-            href="https://github.com/EngOmarElsayed/blur-browser/releases/tag/v0.7.0"
+            href={release.notesUrl}
             target="_blank"
             rel="noreferrer"
             className="mt-4 text-xs text-foreground/60 hover:text-foreground transition"
           >
-            v0.7.0 · Release notes ↗
+            {release.tag} · Release notes ↗
           </a>
 
           <div className="mt-16 w-full max-w-5xl">
