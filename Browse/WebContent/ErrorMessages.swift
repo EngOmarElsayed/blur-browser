@@ -249,6 +249,16 @@ enum ErrorMessageBank {
             title: "Nope, not safe to go in there",
             subtitle: "SSL handshake failed. The site's security setup is broken or untrusted."
         ),
+        ErrorMessage(
+            emoji: "🎭",
+            title: "This site is wearing a fake mustache",
+            subtitle: "The certificate didn't check out. It's either self-signed, expired, or pretending to be someone else."
+        ),
+        ErrorMessage(
+            emoji: "🚧",
+            title: "Roadblock: suspicious certificate",
+            subtitle: "We stopped the connection because the site's identity couldn't be verified. Better safe than sorry."
+        ),
     ]
 
     // MARK: - Generic / Unknown

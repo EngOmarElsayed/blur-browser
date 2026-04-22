@@ -117,7 +117,6 @@ Browse/
 │   ├── TabSessionStore.swift            # JSON persistence (session.json) — UNPINNED tabs only
 │   ├── PinnedTabEntry.swift             # SwiftData @Model for pinned tabs
 │   ├── PinnedTabStore.swift             # SwiftData store (PinnedTabs.store)
-│   ├── CookieStore.swift                # UserDefaults-backed snapshot of all cookies (incl. session cookies)
 │   └── FaviconView.swift                # Shared favicon renderer
 │
 ├── Toolbar/
@@ -218,17 +217,19 @@ Example from `DownloadStore.swift`:
 let config = ModelConfiguration("Downloads", url: storeURL)  // dedicated file
 ```
 
-### Cookie persistence quirk
+### Cookie persistence
 
-Session cookies (no `expires` / no `max-age`) are discarded by WKWebView on
-process termination. `CookieStore.save()` artificially assigns a 30-day
-expiration to any session cookie before archiving, so logins survive launches.
-This is the only reason logins persist — without it, you're logged out on
-every relaunch. **Do not remove this behavior unless you have a better plan.**
+Cookies are persisted entirely by `WKWebsiteDataStore.default()`, which stores
+them encrypted in the app's sandbox container. We do NOT manually archive them
+to UserDefaults — an earlier implementation did, but it wrote every cookie
+(including `HttpOnly` / `Secure` session tokens) as plain JSON, creating a
+credential-theft risk. The one-time cleanup in `AppDelegate.applicationDidFinish
+Launching` removes the stale `persistedCookies` blob from older installs.
 
-Note: Safari has the same limitation. Some sites (e.g., Bitrise) store auth
-tokens in `localStorage`, not cookies, and there's no public WebKit API to
-snapshot those. Document this when users ask about "logged out" bugs.
+Trade-off: session cookies (no `expires` / no `max-age`) are dropped by WebKit
+on quit — this matches the website's own intent. Some sites (e.g., Bitrise)
+also store auth tokens in `localStorage`, which WebKit's default data store
+*does* persist, so most logins survive relaunches anyway.
 
 ---
 

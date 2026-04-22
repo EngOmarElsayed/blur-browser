@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://rsms.me/inter/inter.css");
+
+:root {
+  --chrome: 146 180 244;
+  --foreground: 26 26 26;
+  --accent: 99 102 241;
+  --border: 197 202 224;
+  --surface: 244 247 254;
+}
+
+html,
+body {
+  background: rgb(var(--surface));
+  color: rgb(var(--foreground));
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv11", "ss01", "ss03";
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+* {
+  border-color: rgb(var(--border));
+}

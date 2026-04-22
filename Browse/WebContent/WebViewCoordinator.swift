@@ -440,9 +440,25 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
         let protectionSpace = challenge.protectionSpace
         print("[Auth] didReceive challenge: method=\(protectionSpace.authenticationMethod), host=\(protectionSpace.host), realm=\(protectionSpace.realm ?? "nil")")
 
-        // Handle server trust (HTTPS certificate) — accept by default
+        // Handle server trust (HTTPS certificate) — defer to WebKit's default
+        // validation. WebKit does full modern TLS validation: AIA chasing to
+        // fetch missing intermediate certs, async OCSP/CRL revocation checks,
+        // Certificate Transparency, and hostname matching. A manual
+        // SecTrustEvaluateWithError call here would be stricter than needed and
+        // reject legitimate sites whose servers don't ship full chains
+        // (e.g., new sites with minimal TLS setup).
+        //
+        // When WebKit's validation fails, it fires didFailProvisionalNavigation
+        // with NSURLErrorServerCertificateUntrusted (or similar), which our
+        // error-page flow classifies as .sslError.
+        //
+        // The only override: allow self-signed certs on loopback hosts so
+        // local dev servers (mkcert, etc.) keep working.
         if protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust {
-            if let trust = protectionSpace.serverTrust {
+            let host = protectionSpace.host.lowercased()
+            let isLoopback = host == "localhost" || host == "127.0.0.1" || host == "::1" || host.hasSuffix(".local")
+
+            if isLoopback, let trust = protectionSpace.serverTrust {
                 completionHandler(.useCredential, URLCredential(trust: trust))
             } else {
                 completionHandler(.performDefaultHandling, nil)

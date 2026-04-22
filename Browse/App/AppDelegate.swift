@@ -11,13 +11,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         AppMenuBuilder.buildMainMenu()
 
-        // Restore persisted cookies BEFORE opening any window so tabs load with
-        // auth cookies already in the data store.
-        Task {
-            await CookieStore.restore()
-            openNewWindow()
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        // One-time cleanup: older builds persisted all cookies (including
+        // session cookies) to UserDefaults in plain text. That's a credential-
+        // theft risk, so purge any leftover blob on launch. Cookie persistence
+        // is now handled entirely by WKWebsiteDataStore.default(), which stores
+        // them encrypted in the app's sandboxed container.
+        UserDefaults.standard.removeObject(forKey: "persistedCookies")
+
+        openNewWindow()
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -32,7 +34,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        // Save session before quitting
+        // Save session before quitting. Non-session cookies are persisted
+        // automatically by WKWebsiteDataStore.default(); session cookies are
+        // intentionally dropped on quit, matching the website's own intent.
         if let wc = windowController {
             TabSessionStore.save(tabManager: wc.tabManager)
             // Cancel any in-progress downloads so we don't leave orphan partial
@@ -40,12 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             wc.downloadManager.cancelAll()
         }
 
-        // Persist cookies so login sessions survive app relaunches
-        Task { @MainActor in
-            await CookieStore.save()
-            NSApp.reply(toApplicationShouldTerminate: true)
-        }
-        return .terminateLater
+        return .terminateNow
     }
 
     // MARK: - Open URLs from external apps
