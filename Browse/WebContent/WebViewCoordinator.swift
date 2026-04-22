@@ -200,10 +200,15 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        viewController?.tabForWebView(webView)?.isProvisionalNavigationInFlight = false
+        let tab = viewController?.tabForWebView(webView)
+        tab?.isProvisionalNavigationInFlight = false
         guard let vc = viewController else { return }
         vc.clearErrorPage()
         vc.onNavigationFinished()
+
+        // Ask the page for its real declared favicon (overrides the optimistic
+        // /favicon.ico guess set on URL change).
+        tab?.extractFavicon()
 
         // Re-inject image scanner after navigation completes
         if let scannerURL = Bundle.main.url(forResource: "image-scanner", withExtension: "js"),

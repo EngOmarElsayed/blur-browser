@@ -33,6 +33,18 @@ final class BrowserTab: Identifiable {
     /// Nil otherwise. Refreshed by BrowserWindowController on theme change.
     var newTabWallpaperName: String?
 
+    /// Resolved favicon URL for the current page. Refreshed only when the
+    /// tab's *host* changes (not on every URL change within the same host).
+    /// On host change: seeded from `FaviconCache` if known, else an optimistic
+    /// `https://{host}/favicon.ico`. `extractFavicon()` refines it by reading
+    /// the page's `<link rel="icon">` declarations on first visit per host.
+    var faviconURL: URL?
+
+    /// The host last observed for this tab. Used to detect host transitions
+    /// (google.com → gmail.google.com) and skip them within the same host
+    /// (google.com/1 → google.com/2) so the favicon doesn't flicker.
+    private var lastKnownHost: String?
+
     let webView: WKWebView
     private var observations: [NSKeyValueObservation] = []
 
@@ -108,6 +120,22 @@ final class BrowserTab: Identifiable {
                     // those reverts so the intended URL stays visible.
                     if self.isProvisionalNavigationInFlight { return }
                     self.url = newURL
+                    // Only refresh faviconURL when the host changes. Same-host
+                    // navigations (e.g. google.com/1 → google.com/2) keep the
+                    // existing icon so there's no flicker.
+                    let newHost = newURL.host
+                    if newHost != self.lastKnownHost {
+                        self.lastKnownHost = newHost
+                        if let host = newHost {
+                            // Seed from the disk cache if we've resolved this host
+                            // before; otherwise use the optimistic /favicon.ico
+                            // guess until extractFavicon() refines it.
+                            self.faviconURL = FaviconCache.shared.url(for: host)
+                                ?? URL(string: "https://\(host)/favicon.ico")
+                        } else {
+                            self.faviconURL = nil
+                        }
+                    }
                     // Invalidate cached reader article if the page navigated away
                     if let parsedURL = self.readerParsedForURL, parsedURL != newURL {
                         self.readerArticle = nil
@@ -142,10 +170,51 @@ final class BrowserTab: Identifiable {
         return url?.absoluteString ?? ""
     }
 
-    /// Favicon URL derived from the current page's host using Google's favicon service.
-    var faviconURL: URL? {
-        guard let host = url?.host else { return nil }
-        return URL(string: "https://www.google.com/s2/favicons?sz=32&domain=\(host)")
+    // MARK: - Favicon extraction
+
+    /// JS that finds the best declared icon link on the page. Prefers the
+    /// smallest icon >= 32px (sharp at typical favicon display sizes), falling
+    /// back to the largest icon if none declare a size in that range.
+    private static let extractFaviconJS = """
+    (function() {
+      var sel = 'link[rel~="icon"], link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"], link[rel="shortcut icon"]';
+      var links = Array.prototype.slice.call(document.querySelectorAll(sel));
+      if (links.length === 0) return null;
+      var scored = links.map(function(l) {
+        var s = (l.getAttribute('sizes') || '').match(/\\d+/g);
+        return { href: l.href, size: s ? parseInt(s[0], 10) : 16 };
+      });
+      scored.sort(function(a, b) { return b.size - a.size; }); // largest first
+      var pick = null;
+      for (var i = scored.length - 1; i >= 0; i--) {
+        if (scored[i].size >= 32 && scored[i].size <= 256) { pick = scored[i]; break; }
+      }
+      return (pick || scored[0]).href;
+    })();
+    """
+
+    /// Asks the loaded page for its declared favicon and updates `faviconURL`.
+    /// Skipped if `FaviconCache` already has a resolved URL for this host —
+    /// the icon rarely changes, and skipping avoids unnecessary JS eval on
+    /// every page load. No-op if the page doesn't declare an icon — the
+    /// optimistic `/favicon.ico` guess set on host change remains.
+    func extractFavicon() {
+        guard let host = url?.host else { return }
+        if FaviconCache.shared.url(for: host) != nil {
+            return
+        }
+        webView.evaluateJavaScript(Self.extractFaviconJS) { [weak self] result, _ in
+            Task { @MainActor in
+                guard let self,
+                      let href = result as? String,
+                      let url = URL(string: href) else { return }
+                self.faviconURL = url
+                // Persist by host so future tabs / sessions skip the extract step.
+                if let host = self.url?.host {
+                    FaviconCache.shared.setURL(url, for: host)
+                }
+            }
+        }
     }
 
     // MARK: - WKWebView Configuration with Content Filter Scripts
