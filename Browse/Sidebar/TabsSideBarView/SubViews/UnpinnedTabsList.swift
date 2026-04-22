@@ -21,7 +21,9 @@ struct UnpinnedTabsList: View {
                     .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
                 Spacer()
                 Button {
-                    tabManager.addNewTab(url: nil)
+                    // Route through the same action as ⌘+T so the "+" button
+                    // creates the tab AND opens Quick Search on it in sync.
+                    NSApp.sendAction(#selector(AppDelegate.newTab(_:)), to: nil, from: nil)
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 13))
