@@ -1,0 +1,37 @@
+# macOS
+.DS_Store
+*.swp
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+DerivedData/
+build/
+*.moved-aside
+*.hmap
+*.ipa
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.pins
+Package.resolved
+
+# Website / Node
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env*.local
+next-env.d.ts
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

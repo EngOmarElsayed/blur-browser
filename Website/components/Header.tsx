@@ -4,7 +4,7 @@ import { ThemeSwitcher } from "./ThemeSwitcher";
 import { MobileMenu } from "./MobileMenu";
 
 const GITHUB_URL =
-  process.env.NEXT_PUBLIC_GITHUB_URL ?? "https://github.com/omar-elsayed/blur-browser";
+  process.env.NEXT_PUBLIC_GITHUB_URL ?? "https://github.com/EngOmarElsayed/blur-browser";
 
 export function Header() {
   return (
