@@ -96,7 +96,7 @@ struct DownloadsPanelView: View {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                    .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
                 TextField("Search downloads...", text: $searchText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
@@ -259,7 +259,7 @@ private struct DownloadRow: View {
                         .fill(Color(nsColor: Colors.surfaceSecondary))
                     RoundedRectangle(cornerRadius: 2)
                         .fill(item.status == .paused
-                              ? Color(nsColor: Colors.foregroundMuted)
+                              ? Color(nsColor: Colors.accentPrimary).opacity(0.7)
                               : Color(nsColor: Colors.accentPrimary))
                         .frame(width: max(0, geo.size.width * CGFloat(item.fractionComplete ?? 0)))
                 }

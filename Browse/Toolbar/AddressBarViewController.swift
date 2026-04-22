@@ -8,6 +8,8 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
     private let backButton = NSButton()
     private let forwardButton = NSButton()
     private let urlField = NSTextField()
+    private let urlContainer = NSView()
+    private let lockIcon = NSImageView()
     private let reloadButton = NSButton()
     private let readerButton = NSButton()
     private let shareButton = NSButton()
@@ -65,24 +67,22 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         configureNavButton(forwardButton, symbol: "chevron.right", action: #selector(goForward))
 
         // URL field container — rounded pill
-        let urlContainer = NSView()
         urlContainer.wantsLayer = true
         urlContainer.layer?.backgroundColor = Colors.surfacePrimary.cgColor
-        urlContainer.layer?.borderColor = Colors.borderLight.withAlphaComponent(0.6).cgColor
+        urlContainer.layer?.borderColor = Colors.accentPrimary.cgColor
         urlContainer.layer?.borderWidth = 1
         urlContainer.layer?.cornerRadius = Layout.urlBarHeight / 2
 
-        // Lock icon
-        let lockIcon = NSImageView()
+        // Lock icon — drawn inside the white URL bar, use onSurface* tokens
         lockIcon.image = NSImage(systemSymbolName: "lock.fill", accessibilityDescription: "Secure")
-        lockIcon.contentTintColor = Colors.foregroundMuted
+        lockIcon.contentTintColor = Colors.accentPrimary
         lockIcon.setContentHuggingPriority(.required, for: .horizontal)
 
-        // URL text field
+        // URL text field — always dark since the URL bar is always white
         urlField.isBordered = false
         urlField.drawsBackground = false
         urlField.font = .systemFont(ofSize: Typography.bodySize)
-        urlField.textColor = Colors.foregroundSecondary
+        urlField.textColor = Colors.accentPrimary
         urlField.placeholderString = "Search or enter URL..."
         urlField.focusRingType = .none
         urlField.delegate = self
@@ -233,7 +233,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         readerButton.imagePosition = .imageOnly
         readerButton.isBordered = false
         readerButton.bezelStyle = .accessoryBarAction
-        readerButton.contentTintColor = Colors.foregroundSecondary
+        readerButton.contentTintColor = Colors.accentPrimary
         readerButton.target = self
         readerButton.action = #selector(toggleReaderMode)
         readerButton.wantsLayer = true
@@ -257,7 +257,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
             systemSymbolName: active ? "doc.plaintext.fill" : "doc.plaintext",
             accessibilityDescription: "Reader Mode"
         )
-        readerButton.contentTintColor = active ? Colors.accentPrimary : Colors.foregroundSecondary
+        readerButton.contentTintColor = Colors.accentPrimary
     }
 
     /// Re-apply theme-dependent layer colors and control tints after a theme switch.
@@ -274,12 +274,13 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         shareButton.contentTintColor = Colors.foregroundMuted
         moreButton.contentTintColor = Colors.foregroundMuted
 
-        // URL field text
-        urlField.textColor = Colors.foregroundSecondary
+        urlField.textColor = Colors.accentPrimary
+        urlContainer.layer?.borderColor = Colors.accentPrimary.cgColor
+        lockIcon.contentTintColor = Colors.accentPrimary
 
         // Reader button defaults to the inactive tint; callers will flip it active
         // again via setReaderActive(_:) on the next tab update if needed.
-        readerButton.contentTintColor = Colors.foregroundSecondary
+        readerButton.contentTintColor = Colors.accentPrimary
 
         // Re-render any theme-aware text/icon tints by forcing an update path
         view.needsDisplay = true

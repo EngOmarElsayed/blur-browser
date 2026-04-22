@@ -96,6 +96,18 @@ final class QuickSearchOverlay {
         let y = (parentBounds.height - height) / 2
         hosting.frame = NSRect(x: x, y: y, width: width, height: height)
     }
+
+    /// Re-adds the dimming + hosting views to their parent so they sit on top
+    /// of any siblings that were inserted after them. Call after any operation
+    /// that mutates the parent's subview order (e.g. `displayTab` re-adding
+    /// the web view on top).
+    func bringToFront(in parent: NSView) {
+        guard let dimming = dimmingView, let hosting = hostingView else { return }
+        // addSubview without a positioning argument places the view above all
+        // existing siblings, so re-adding in order re-asserts z-order.
+        parent.addSubview(dimming)
+        parent.addSubview(hosting)
+    }
 }
 
 // MARK: - Blocking Dim View

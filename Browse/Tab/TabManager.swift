@@ -217,7 +217,14 @@ final class TabManager {
         guard let tab = selectedTab else { return }
         let url: URL?
 
-        if urlString.hasPrefix("http://") || urlString.hasPrefix("https://") {
+        if urlString.hasPrefix("file://") {
+            url = URL(string: urlString)
+        } else if urlString.hasPrefix("/") {
+            url = URL(fileURLWithPath: urlString)
+        } else if urlString.hasPrefix("~/") {
+            let expanded = (urlString as NSString).expandingTildeInPath
+            url = URL(fileURLWithPath: expanded)
+        } else if urlString.hasPrefix("http://") || urlString.hasPrefix("https://") {
             url = URL(string: urlString)
         } else if urlString.contains(".") && !urlString.contains(" ") {
             url = URL(string: "https://\(urlString)")
@@ -228,7 +235,7 @@ final class TabManager {
 
         if let url {
             tab.url = url
-            tab.webView.load(URLRequest(url: url))
+            BrowserTab.load(url, on: tab.webView)
         }
     }
 }

@@ -39,7 +39,7 @@
 				<string></string>
 				<key>leading</key>
 				<string>        contentContainerView.wantsLayer = true
-        contentContainerView.layer?.cornerRadius = 14
+        contentContainerView.layer?.cornerRadius = 16
 </string>
 				<key>trailing</key>
 				<string>        contentContainerView.layer?.masksToBounds = true
@@ -60,13 +60,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>502</string>
+					<string>504</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>502</string>
+					<string>503</string>
 					<key>Timestamp</key>
-					<string>798457897.219341</string>
+					<string>798534368.514565</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -82,15 +82,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string></string>
+				<string>        layoutFindBar()
+</string>
 				<key>leading</key>
-				<string>    private let maskLayer = CAShapeLayer()
-    private let radius: CGFloat = 16
+				<string>        findController = controller
+        view.addSubview(bar)
 </string>
 				<key>trailing</key>
-				<string>
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
+				<string>        layoutCurrentWebView()
+        bar.focusSearchField()
+    }
 </string>
 			</dict>
 			<key>type</key>

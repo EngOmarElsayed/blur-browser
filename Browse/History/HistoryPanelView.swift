@@ -94,7 +94,7 @@ struct HistoryPanelView: View {
             Spacer().frame(height: 40)
             Image(systemName: "clock")
                 .font(.system(size: 28, weight: .light))
-                .foregroundStyle(Color(nsColor: Colors.borderLight))
+                .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
             Text("No history yet")
                 .font(.system(size: 13))
                 .foregroundStyle(Color(nsColor: Colors.foregroundMuted))

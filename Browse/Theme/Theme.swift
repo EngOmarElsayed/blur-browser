@@ -49,10 +49,7 @@ extension Theme {
             borderHex: "#C5CAE0",
             wallpaperNames: [
                 "turquoise-lake-aerial-view",
-                "lavender-bloom-macro-detail",
-                "white-building-blue-sky",
-                "pale-blue-pool-diagonal-shadow",
-                "frosted-glass-blue-violet-light"
+                "white-building-blue-sky"
             ],
             isDark: false
         ),
@@ -65,11 +62,11 @@ extension Theme {
             accentHex: "#818CF8",
             borderHex: "#3A3D50",
             wallpaperNames: [
-                "starry-night-mountain-silhouette",
-                "city-grid-at-night-amber-lights",
-                "volcanic-rock-blue-glow",
-                "long-exposure-waves-dark-rocks",
-                "ink-in-water-indigo-swirls"
+                "blue-stars-phone-wallepaper",
+                "andre-benz-qi2hmCwlhcE-unsplash",
+                "nasa-Q1p7bh3SHj8-unsplash",
+                "nathan-anderson-L95xDkSSuWw-unsplash",
+                "zoltan-tasi-sJGvoX_eVhw-unsplash"
             ],
             isDark: true
         ),
@@ -84,7 +81,6 @@ extension Theme {
             wallpaperNames: [
                 "sand-dunes-golden-hour",
                 "terracotta-rooftops-warm-ochre",
-                "raw-linen-fabric-soft-light",
                 "desert-canyon-layered-sandstone",
                 "ceramic-bowl-window-light"
             ],
@@ -101,9 +97,6 @@ extension Theme {
             wallpaperNames: [
                 "fjord-overcast-light",
                 "birch-forest-winter",
-                "scandinavian-interior-pale-wood",
-                "frozen-lake-ice-cracks",
-                "coastal-rocks-lichen-calm-sea"
             ],
             isDark: false
         ),
@@ -117,10 +110,7 @@ extension Theme {
             borderHex: "#C4B2B8",
             wallpaperNames: [
                 "pampas-grass-pale-pink-wall",
-                "pink-marble-veins-blush",
-                "flat-lay-dried-flowers-linen",
-                "cherry-blossoms-muted-sky",
-                "rose-concrete-shadow-play"
+                "cherry-blossoms-muted-sky"
             ],
             isDark: false
         ),
@@ -133,11 +123,9 @@ extension Theme {
             accentHex: "#527C52",
             borderHex: "#A8B8A4",
             wallpaperNames: [
-                "monstera-leaves-water-droplets",
+                "fog-over-mountain-ridge",
                 "misty-forest-path-soft-green",
-                "terraced-rice-paddies-emerald",
-                "moss-on-ancient-stone-rain",
-                "greenhouse-climbing-plants"
+                "pebble-beach-mist-gray-stones"
             ],
             isDark: false
         ),
@@ -150,11 +138,9 @@ extension Theme {
             accentHex: "#5A5A5A",
             borderHex: "#B5B5B5",
             wallpaperNames: [
-                "brutalist-curves-concrete",
-                "fog-over-mountain-ridge",
-                "pencil-strokes-textured-paper",
-                "pebble-beach-mist-gray-stones",
-                "abstract-gray-geometric-shapes"
+                "terraced-rice-paddies-emerald",
+                "pine-trees-covered-by-snow-with-wooden-house-mountain-chomiak-beautiful-winter-landscapes-carpathian-mountains-ukraine-frost-nature",
+                "mike-kotsch-9wTWFyInJ4Y-unsplash"
             ],
             isDark: false
         )

@@ -42,7 +42,7 @@ struct ShortcutsOverlayView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(section.title.uppercased())
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary))
                 .tracking(0.5)
 
             VStack(spacing: 4) {
@@ -58,17 +58,17 @@ struct ShortcutsOverlayView: View {
         HStack(spacing: 8) {
             Text(item.action)
                 .font(.system(size: 13))
-                .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
+                .foregroundStyle(Color(nsColor: NSColor(hex: "#142236")))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(item.shortcut)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                .foregroundStyle(Color(nsColor: Colors.surfacePrimary))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(nsColor: Colors.surfaceSecondary))
+                        .fill(Color(nsColor: Colors.accentPrimary).opacity(0.5))
                 )
         }
     }

@@ -20,7 +20,7 @@ struct TabItemView: View {
             Text(tab.displayTitle)
                 .font(.system(size: 13, weight: isSelected ? .medium : .regular))
                 .foregroundStyle(isSelected
-                                 ? Color(nsColor: Colors.foregroundPrimary)
+                                 ? Color(nsColor: Colors.accentPrimary)
                                  : Color(nsColor: Colors.foregroundSecondary)
                 )
                 .lineLimit(1)
@@ -31,7 +31,9 @@ struct TabItemView: View {
                 Button(action: onPin) {
                     Image(systemName: "pin")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                        .foregroundStyle(
+                            isSelected ? Color(nsColor: Colors.accentPrimary): Color(nsColor: Colors.foregroundMuted)
+                        )
                         .rotationEffect(.degrees(45))
                 }
                 .buttonStyle(.plain)
@@ -42,7 +44,9 @@ struct TabItemView: View {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                        .foregroundStyle(
+                            isSelected ? Color(nsColor: Colors.accentPrimary): Color(nsColor: Colors.foregroundMuted)
+                        )
                 }
                 .buttonStyle(.plain)
                 .frame(width: 16, height: 16)
@@ -63,7 +67,7 @@ struct TabItemView: View {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(
                     isSelected
-                        ? Color(nsColor: Colors.accentPrimary).opacity(0.6)
+                        ? Color(nsColor: Colors.accentPrimary)
                     : .clear,
                     lineWidth: isSelected ? 1.5 : 0
                 )

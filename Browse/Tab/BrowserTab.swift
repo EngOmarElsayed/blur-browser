@@ -49,7 +49,19 @@ final class BrowserTab: Identifiable {
         Self.syncColorScheme(wv)
 
         if let url {
-            wv.load(URLRequest(url: url))
+            Self.load(url, on: wv)
+        }
+    }
+
+    /// Load a URL into a WKWebView, picking the right API for the scheme.
+    /// `file://` URLs use `loadFileURL(_:allowingReadAccessTo:)` with the parent
+    /// directory so adjacent CSS/JS/image assets can be resolved.
+    static func load(_ url: URL, on webView: WKWebView) {
+        if url.isFileURL {
+            let readAccess = url.deletingLastPathComponent()
+            webView.loadFileURL(url, allowingReadAccessTo: readAccess)
+        } else {
+            webView.load(URLRequest(url: url))
         }
     }
 

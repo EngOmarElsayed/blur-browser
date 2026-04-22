@@ -18,6 +18,14 @@ enum Colors {
     static let surfacePrimary    = NSColor(hex: "#FFFFFF")
     static let surfaceSecondary  = NSColor(hex: "#F7F8FA")
     static let surfaceInverse    = NSColor(hex: "#0A0A0A")
+
+    // MARK: - Foreground on white surfaces
+    // Use these for text/icons drawn on surfacePrimary/surfaceSecondary
+    // (URL bar, popovers, cards). They stay dark across all themes so
+    // they remain readable on light surfaces even when the chrome is dark.
+    static let onSurfacePrimary   = NSColor(hex: "#1A1A1A")
+    static let onSurfaceSecondary = NSColor(hex: "#5A5E6B")
+    static let onSurfaceMuted     = NSColor(hex: "#8B8F9C")
 }
 
 // MARK: - Layout Constants

@@ -79,6 +79,13 @@ final class DownloadConfirmationView: NSView {
         denyButton.bezelStyle = .rounded
         denyButton.controlSize = .large
         denyButton.keyEquivalent = "\u{1b}" // Escape
+        denyButton.attributedTitle = NSAttributedString(
+            string: "Don't Allow",
+            attributes: [
+                .foregroundColor: Colors.accentPrimary,
+                .font: NSFont.systemFont(ofSize: 13, weight: .medium)
+            ]
+        )
 
         let allowButton = NSButton(title: "Download", target: self, action: #selector(allowTapped))
         allowButton.bezelStyle = .rounded

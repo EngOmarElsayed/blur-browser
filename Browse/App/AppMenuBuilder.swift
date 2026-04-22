@@ -29,6 +29,7 @@ enum AppMenuBuilder {
         addItem(to: fileMenu, title: "Quick Search", action: #selector(AppDelegate.openQuickSearch(_:)), key: "k", target: delegate)
         addItem(to: fileMenu, title: "New Window", action: #selector(AppDelegate.openNewWindow), key: "n", target: delegate)
         fileMenu.addItem(.separator())
+        addItem(to: fileMenu, title: "Open File...", action: #selector(AppDelegate.openFile(_:)), key: "o", target: delegate)
         addItem(to: fileMenu, title: "Open Location...", action: #selector(AppDelegate.focusSearch(_:)), key: "l", target: delegate)
         fileMenu.addItem(.separator())
         addItem(to: fileMenu, title: "Close Tab", action: #selector(AppDelegate.closeCurrentTab(_:)), key: "w", target: delegate)

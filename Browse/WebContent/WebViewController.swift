@@ -128,6 +128,11 @@ final class WebViewController: NSViewController {
         // stay visible even when the error page overlay is present.
         cornerMaskView.removeFromSuperview()
         view.addSubview(cornerMaskView)
+        // If the quick search overlay is mounted, keep it on top too — otherwise
+        // a tab swap would leave the overlay buried under the new web view.
+        if let overlay = quickSearchOverlay, overlay.isVisible {
+            overlay.bringToFront(in: view)
+        }
     }
 
     // MARK: - Navigation
@@ -211,6 +216,42 @@ final class WebViewController: NSViewController {
         }
     }
 
+    // MARK: - Modal Backdrop (Gaussian blur behind auth/download dialogs)
+
+    /// Gaussian-blur backdrop drawn over the WKWebView while a modal dialog
+    /// (auth or download) is visible. Kept here rather than inside each dialog
+    /// so the blur animates in sync with the dialog and can be shared by both.
+    private var modalBackdrop: GaussianBlurView?
+
+    private func presentModalBackdrop() {
+        // If one is already present (rare — two dialogs stacking), reuse it.
+        if modalBackdrop != nil { return }
+
+        let blur = GaussianBlurView(radius: 20)
+        blur.frame = view.bounds
+        blur.layer?.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
+        blur.layer?.masksToBounds = true
+        blur.alphaValue = 0
+        view.addSubview(blur)
+        modalBackdrop = blur
+
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            blur.animator().alphaValue = 1
+        }
+    }
+
+    private func dismissModalBackdrop() {
+        guard let blur = modalBackdrop else { return }
+        modalBackdrop = nil
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.2
+            blur.animator().alphaValue = 0
+        }, completionHandler: {
+            blur.removeFromSuperview()
+        })
+    }
+
     // MARK: - Authentication Dialog
 
     private var currentAuthDialog: AuthenticationDialogView?
@@ -226,14 +267,18 @@ final class WebViewController: NSViewController {
 
         let dialog = AuthenticationDialogView(host: host, realm: realm)
 
-        dialog.onSubmit = { username, password in
+        dialog.onSubmit = { [weak self] username, password in
             completion(username, password)
+            self?.dismissModalBackdrop()
         }
 
-        dialog.onCancel = {
+        dialog.onCancel = { [weak self] in
             completion(nil, nil)
+            self?.dismissModalBackdrop()
         }
 
+        // Blur first so the dialog sits on top of it
+        presentModalBackdrop()
         view.addSubview(dialog)
         currentAuthDialog = dialog
 
@@ -268,9 +313,17 @@ final class WebViewController: NSViewController {
         currentDownloadDialog?.removeFromSuperview()
 
         let dialog = DownloadConfirmationView(filename: filename, host: host, expectedSize: expectedSize)
-        dialog.onAllow = { completion(true) }
-        dialog.onDeny = { completion(false) }
+        dialog.onAllow = { [weak self] in
+            completion(true)
+            self?.dismissModalBackdrop()
+        }
+        dialog.onDeny = { [weak self] in
+            completion(false)
+            self?.dismissModalBackdrop()
+        }
 
+        // Blur first so the dialog sits on top of it
+        presentModalBackdrop()
         view.addSubview(dialog)
         currentDownloadDialog = dialog
 
@@ -348,7 +401,10 @@ final class WebViewController: NSViewController {
 
     func onNavigationFinished() {
         guard let tab = tabManager.selectedTab, let url = tab.url else { return }
-        historyStore?.addEntry(url: url, title: tab.title)
+        // Don't record internal pages (new-tab page, etc.) in browsing history.
+        if url.scheme != "blur" {
+            historyStore?.addEntry(url: url, title: tab.title)
+        }
 
         // Check if this page can be displayed in reader mode
         Task { [weak self] in
@@ -431,6 +487,17 @@ final class WebViewController: NSViewController {
         } else {
             overlay.show(in: view, navigateInNewTab: navigateInNewTab)
         }
+    }
+
+    /// Always presents the quick-search overlay (never toggles). Used by ⌘+T
+    /// which creates a new tab and immediately opens search on it — in that
+    /// flow toggling-off would be a surprising UX.
+    func presentQuickSearch(navigateInNewTab: Bool) {
+        guard let overlay = quickSearchOverlay else { return }
+        if overlay.isVisible {
+            overlay.dismiss()
+        }
+        overlay.show(in: view, navigateInNewTab: navigateInNewTab)
     }
 
     func dismissQuickSearch() {

@@ -71,6 +71,13 @@ final class AuthenticationDialogView: NSView {
         cancelButton.bezelStyle = .rounded
         cancelButton.controlSize = .large
         cancelButton.keyEquivalent = "\u{1b}" // Escape
+        cancelButton.attributedTitle = NSAttributedString(
+            string: "Cancel",
+            attributes: [
+                .foregroundColor: Colors.accentPrimary,
+                .font: NSFont.systemFont(ofSize: 13, weight: .medium)
+            ]
+        )
 
         let loginButton = NSButton(title: "Log In", target: self, action: #selector(submitTapped))
         loginButton.bezelStyle = .rounded

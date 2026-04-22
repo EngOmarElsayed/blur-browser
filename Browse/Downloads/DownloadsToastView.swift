@@ -24,7 +24,7 @@ struct DownloadsToastView: View {
             HStack(alignment: .center) {
                 Text("Downloads")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
+                    .foregroundStyle(Color(nsColor: Colors.accentPrimary))
 
                 trailingButton
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -76,7 +76,7 @@ struct DownloadsToastView: View {
         Button(action: onDismiss) {
             Image(systemName: "minus")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary))
                 .frame(width: 16, height: 16)
         }
         .buttonStyle(.plain)
@@ -104,7 +104,7 @@ private struct DownloadRow: View {
                 HStack(alignment: .center) {
                     Text(item.fileName)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
+                        .foregroundStyle(Color(nsColor: Colors.accentPrimary))
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -166,7 +166,7 @@ private struct DownloadRow: View {
                     .fill(Color(nsColor: Colors.surfaceSecondary))
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                    .foregroundStyle(Color(nsColor: Colors.surfacePrimary))
             }
         case .inProgress, .paused:
             fileIcon
@@ -192,17 +192,17 @@ private struct DownloadRow: View {
             progressBarSection
             Text(progressText)
                 .font(.system(size: 10))
-                .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary).opacity(0.7))
 
         case .paused:
             progressBarSection
             Text("Paused — \(progressText)")
                 .font(.system(size: 10))
-                .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary).opacity(0.7))
         case .completed:
             Text("Downloaded — \(formattedFullSize)")
                 .font(.system(size: 10))
-                .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary).opacity(0.7))
         case .failed:
             Text("Download failed")
                 .font(.system(size: 10))
@@ -210,7 +210,7 @@ private struct DownloadRow: View {
         case .cancelled:
             Text("Cancelled")
                 .font(.system(size: 10))
-                .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary).opacity(0.7))
         }
     }
 
@@ -224,7 +224,7 @@ private struct DownloadRow: View {
 
                 RoundedRectangle(cornerRadius: 3)
                     .fill(item.status == .paused
-                          ? Color(nsColor: Colors.foregroundMuted)
+                          ? Color(nsColor: Colors.accentPrimary).opacity(0.5)
                           : Color(nsColor: Colors.accentPrimary))
                     .frame(width: max(0, geo.size.width * CGFloat(item.fractionComplete ?? 0)))
                     .animation(.easeOut(duration: 0.2), value: item.completedBytes)

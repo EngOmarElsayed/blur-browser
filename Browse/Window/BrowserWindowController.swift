@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import UniformTypeIdentifiers
 
 @MainActor
 final class BrowserWindowController: NSWindowController, NSWindowDelegate {
@@ -159,11 +160,36 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func newTabAndSearch() {
-        splitVC.webViewController.showQuickSearch(navigateInNewTab: true)
+        // Create a new blur://newtab tab and immediately open quick search
+        // on it. Quick search submit navigates the current tab (the new one),
+        // not yet-another-new-tab.
+        tabManager.addNewTab()
+        // Force the web view + address bar to swap to the new tab *now*.
+        // Otherwise the 50ms polling tick would leave the previous tab's
+        // content visible behind the overlay until the next tick.
+        splitVC.webViewController.displayTab(tabManager.selectedTab)
+        splitVC.addressBar.updateForTab(tabManager.selectedTab)
+        splitVC.webViewController.presentQuickSearch(navigateInNewTab: false)
     }
 
     func focusAndSelectURLBar() {
         splitVC.addressBar.focusAndSelectAll()
+    }
+
+    func openFile() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        panel.allowedContentTypes = [.html, .xml, .plainText, .pdf]
+        panel.message = "Choose a file to open"
+        panel.prompt = "Open"
+        panel.beginSheetModal(for: window!) { [weak self] response in
+            guard response == .OK, let self else { return }
+            for url in panel.urls {
+                self.tabManager.addNewTab(url: url)
+            }
+        }
     }
 
     func copyCurrentURL() {

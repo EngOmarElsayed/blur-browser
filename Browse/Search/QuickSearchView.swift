@@ -12,12 +12,12 @@ struct QuickSearchView: View {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 16))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                    .foregroundStyle(Color(nsColor: Colors.accentPrimary))
 
                 TextField("Search tabs, history, bookmarks...", text: Bindable(viewModel).searchText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
+                    .foregroundStyle(Color(nsColor: Colors.accentPrimary))
                     .focused($textFiledFocus)
                     .onSubmit {
                         viewModel.selectResult()
@@ -55,15 +55,15 @@ struct QuickSearchView: View {
             Spacer()
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 32, weight: .light))
-                .foregroundStyle(Color(nsColor: Colors.borderLight))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary))
             Text(viewModel.searchText.isEmpty ? "Start typing to search" : "No results found")
                 .font(.system(size: 14))
-                .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary))
             Text(viewModel.searchText.isEmpty
                  ? "Search tabs, history, and the web"
                  : "Try a different search term")
                 .font(.system(size: 12))
-                .foregroundStyle(Color(nsColor: Colors.foregroundMuted).opacity(0.7))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary).opacity(0.7))
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -108,7 +108,7 @@ struct QuickSearchView: View {
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+            .foregroundStyle(Color(nsColor: Colors.accentPrimary).opacity(0.7))
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 4)
@@ -119,17 +119,17 @@ struct QuickSearchView: View {
         HStack(spacing: 10) {
             Image(systemName: result.icon)
                 .font(.system(size: 14))
-                .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary))
                 .frame(width: 16, height: 16)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(result.title)
                     .font(.system(size: 13))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
+                    .foregroundStyle(Color(nsColor: Colors.accentPrimary))
                     .lineLimit(1)
                 Text(result.subtitle)
                     .font(.system(size: 11))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                    .foregroundStyle(Color(nsColor: Colors.accentPrimary).opacity(0.8))
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -146,7 +146,7 @@ struct QuickSearchView: View {
     private func kbdBadge(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 11, design: .monospaced))
-            .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+            .foregroundStyle(Color(nsColor: Colors.accentPrimary))
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
             .background(Color(nsColor: Colors.surfaceSecondary))

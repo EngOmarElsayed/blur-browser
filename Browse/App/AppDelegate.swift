@@ -95,6 +95,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         wc.focusAndSelectURLBar()
     }
 
+    @objc func openFile(_ sender: Any?) {
+        if windowController == nil { openNewWindow() }
+        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController
+            ?? windowController else { return }
+        wc.openFile()
+    }
+
     @objc func copyURL(_ sender: Any?) {
         guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
         wc.copyCurrentURL()

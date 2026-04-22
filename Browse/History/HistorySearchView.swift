@@ -7,12 +7,12 @@ struct HistorySearchView: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 12))
-                .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                .foregroundStyle(Color(nsColor: Colors.surfacePrimary))
 
             TextField("Search history...", text: $searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
-                .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
+                .foregroundStyle(Color(nsColor: Colors.surfacePrimary))
 
             if !searchText.isEmpty {
                 Button {
