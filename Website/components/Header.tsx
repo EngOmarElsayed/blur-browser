@@ -22,6 +22,9 @@ export function Header() {
           <span className="text-base font-semibold tracking-tight text-foreground">
             Blur
           </span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+            Beta
+          </span>
         </Link>
 
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-sm text-foreground/70 sm:flex">
