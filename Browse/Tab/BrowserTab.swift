@@ -5,7 +5,17 @@ import WebKit
 @MainActor
 final class BrowserTab: Identifiable {
     let id: UUID
-    var url: URL?
+
+    /// The tab's current URL. Setting it triggers host-change detection
+    /// to refresh faviconURL from the cache (see didSet).
+    var url: URL? {
+        didSet {
+            if url != oldValue {
+                syncFaviconForCurrentHost()
+            }
+        }
+    }
+
     var title: String
     var isLoading: Bool = false
     var canGoBack: Bool = false
@@ -70,6 +80,12 @@ final class BrowserTab: Identifiable {
             newTabWallpaperName = ThemeStore.shared.current.wallpaperNames.randomElement()
         }
 
+        // Swift suppresses property observers (didSet) during init, so the
+        // didSet on `url` won't fire for the assignment above. Call the sync
+        // explicitly so restored / pinned tabs get their optimistic
+        // /favicon.ico guess (or cached URL) from the very first frame.
+        syncFaviconForCurrentHost()
+
         if let url {
             Self.load(url, on: wv)
         }
@@ -119,23 +135,9 @@ final class BrowserTab: Identifiable {
                     // revert its url to the last committed URL on failure. Ignore
                     // those reverts so the intended URL stays visible.
                     if self.isProvisionalNavigationInFlight { return }
+                    // Assigning self.url fires didSet, which calls
+                    // syncFaviconForCurrentHost() — no inline favicon logic needed.
                     self.url = newURL
-                    // Only refresh faviconURL when the host changes. Same-host
-                    // navigations (e.g. google.com/1 → google.com/2) keep the
-                    // existing icon so there's no flicker.
-                    let newHost = newURL.host
-                    if newHost != self.lastKnownHost {
-                        self.lastKnownHost = newHost
-                        if let host = newHost {
-                            // Seed from the disk cache if we've resolved this host
-                            // before; otherwise use the optimistic /favicon.ico
-                            // guess until extractFavicon() refines it.
-                            self.faviconURL = FaviconCache.shared.url(for: host)
-                                ?? URL(string: "https://\(host)/favicon.ico")
-                        } else {
-                            self.faviconURL = nil
-                        }
-                    }
                     // Invalidate cached reader article if the page navigated away
                     if let parsedURL = self.readerParsedForURL, parsedURL != newURL {
                         self.readerArticle = nil
@@ -168,6 +170,25 @@ final class BrowserTab: Identifiable {
         // address bar so the placeholder ("Search or enter URL...") is visible.
         if url == AppConstants.newTabURL { return "" }
         return url?.absoluteString ?? ""
+    }
+
+    // MARK: - Favicon resolution
+
+    /// Refresh `faviconURL` when the tab's *host* changes. Same-host navigations
+    /// (google.com/1 → google.com/2) are a no-op so the icon doesn't flicker.
+    /// On host change, seed from the disk cache if we've resolved this host
+    /// before; otherwise fall back to the optimistic `/favicon.ico` guess until
+    /// `extractFavicon()` refines it from the page's HTML.
+    private func syncFaviconForCurrentHost() {
+        let newHost = url?.host
+        guard newHost != lastKnownHost else { return }
+        lastKnownHost = newHost
+        if let host = newHost {
+            faviconURL = FaviconCache.shared.url(for: host)
+                ?? URL(string: "https://\(host)/favicon.ico")
+        } else {
+            faviconURL = nil
+        }
     }
 
     // MARK: - Favicon extraction
