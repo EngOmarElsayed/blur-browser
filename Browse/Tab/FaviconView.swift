@@ -11,7 +11,7 @@ struct FaviconView: View {
     let faviconURL: URL?
     
     var body: some View {
-        AsyncImage(cachingPolicy: .duringAppSession, from: faviconURL) { phase in
+        AsyncImage(cachingPolicy: .onDisk, from: faviconURL) { phase in
             switch phase {
             case .success(let image):
                 image

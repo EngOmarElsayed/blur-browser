@@ -45,4 +45,17 @@ public enum CachingPolicy: Sendable {
     ///  If memory is needed by other applications, these policies remove some items from the cache, minimizing its memory footprint.
     ///
     case duringAppSession
+
+    /// Cache images on disk so they persist across application launches.
+    ///
+    /// Images are stored as files under the user's Caches directory, keyed by a SHA-256
+    /// hash of the URL. Reads go through a memory hot-layer first, so repeated reads
+    /// within a session don't touch disk. On cache miss, the image is downloaded, then
+    /// written to both memory and disk.
+    ///
+    /// - Note: The system may reclaim the Caches directory under disk pressure — this
+    ///   is appropriate behavior for image data and matches what Apple's own cached
+    ///   network images do.
+    ///
+    case onDisk
 }
