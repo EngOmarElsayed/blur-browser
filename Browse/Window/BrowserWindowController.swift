@@ -14,6 +14,11 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     private var quickSearchOverlay: QuickSearchOverlay?
     private var observationTask: Task<Void, Never>?
 
+    /// The tab ID the polling loop last observed. Promoted from a local var so
+    /// newTabAndSearch can pre-advance it and prevent the polling from firing
+    /// a redundant displayTab pass that would dismiss the just-shown overlay.
+    private var lastObservedTabID: UUID?
+
     init() {
         let window = BrowserWindow()
         super.init(window: window)
@@ -81,7 +86,6 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         // Observe selected tab changes, URL changes, and loading progress
         observationTask = Task { [weak self] in
             guard let self else { return }
-            var lastID: UUID?
             var lastURL: URL?
             var lastProgress: Double = 0
             var lastLoading: Bool = false
@@ -97,14 +101,16 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
                     splitVC.addressBar.applyActiveTheme()
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)
 
-                    // Propagate color scheme + reload new-tab pages so their wallpaper refreshes.
-                    let newTabURLString = AppConstants.newTabURLString
+                    // Propagate color scheme + re-pick wallpapers for new-tab tabs
+                    // so the wallpaper reflects the newly selected theme.
+                    let newWallpapers = ThemeStore.shared.current.wallpaperNames
                     for tab in tabManager.tabs {
                         BrowserTab.syncColorScheme(tab.webView)
-                        if tab.url?.absoluteString == newTabURLString {
-                            tab.webView.reload()
+                        if tab.url == AppConstants.newTabURL {
+                            tab.newTabWallpaperName = newWallpapers.randomElement()
                         }
                     }
+                    splitVC.webViewController.refreshNewTabOverlay()
                 }
                 let currentID = tabManager.selectedTabID
                 let currentURL = tabManager.selectedTab?.url
@@ -119,17 +125,23 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
                     splitVC.refreshDownloadsToast()
                 }
 
-                if currentID != lastID {
-                    lastID = currentID
+                if currentID != lastObservedTabID {
+                    lastObservedTabID = currentID
                     lastURL = currentURL
                     lastProgress = currentProgress
                     lastLoading = currentLoading
+                    // Dismiss quick search when switching tabs — it's a per-tab
+                    // intent, not a persistent overlay.
+                    splitVC.webViewController.dismissQuickSearch()
                     splitVC.webViewController.displayTab(tabManager.selectedTab)
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)
                     splitVC.syncReaderModeForSelectedTab()
                 } else if currentURL != lastURL {
                     lastURL = currentURL
                     splitVC.addressBar.updateForTab(tabManager.selectedTab)
+                    // URL change can mean: user navigated from new-tab to a real
+                    // URL, or back to the new-tab. Refresh the wallpaper overlay.
+                    splitVC.webViewController.refreshNewTabOverlay()
                 } else if currentProgress != lastProgress || currentLoading != lastLoading {
                     lastProgress = currentProgress
                     lastLoading = currentLoading
@@ -164,9 +176,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         // on it. Quick search submit navigates the current tab (the new one),
         // not yet-another-new-tab.
         tabManager.addNewTab()
-        // Force the web view + address bar to swap to the new tab *now*.
-        // Otherwise the 50ms polling tick would leave the previous tab's
-        // content visible behind the overlay until the next tick.
+        // Pre-advance the observer so the polling task's tab-switch branch
+        // doesn't fire a redundant displayTab (which would dismiss the overlay
+        // we're about to show).
+        lastObservedTabID = tabManager.selectedTabID
         splitVC.webViewController.displayTab(tabManager.selectedTab)
         splitVC.addressBar.updateForTab(tabManager.selectedTab)
         splitVC.webViewController.presentQuickSearch(navigateInNewTab: false)

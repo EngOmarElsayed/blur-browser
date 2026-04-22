@@ -30,6 +30,10 @@ final class WebViewController: NSViewController {
 
     private let cornerMaskView = CornerMaskView()
 
+    /// Native wallpaper overlay shown on top of the web view whenever the current
+    /// tab is on `AppConstants.newTabURL`. Replaces the old blur://newtab HTML path.
+    private let wallpaperView = NewTabWallpaperView()
+
     override func loadView() {
         view = NSView()
         view.wantsLayer = true
@@ -88,6 +92,11 @@ final class WebViewController: NSViewController {
         view.addSubview(wv)
         currentWebView = wv
 
+        // Wallpaper overlay: shown when tab.url == newTabURL, hidden otherwise.
+        // Placed above the web view so the "new tab" rendering is instant and
+        // doesn't depend on WKWebView loading anything.
+        updateNewTabWallpaper(for: tab)
+
         // Corner mask on top of web view to fake rounded corners
         cornerMaskView.removeFromSuperview()
         view.addSubview(cornerMaskView)
@@ -124,15 +133,39 @@ final class WebViewController: NSViewController {
         cornerMaskView.frame = view.bounds
         // Keep error page (if any) sized to fill the content area
         errorPageHosting?.view.frame = view.bounds
-        // Ensure corner mask is always the topmost subview so rounded corners
-        // stay visible even when the error page overlay is present.
+        wallpaperView.frame = view.bounds
+        // Re-assert z-order: [wkwebview] < [wallpaper] < [cornerMask] < [quickSearchOverlay]
+        // addSubview without a positioning arg moves the subview to the top.
+        if wallpaperView.superview === view {
+            wallpaperView.removeFromSuperview()
+            view.addSubview(wallpaperView)
+        }
         cornerMaskView.removeFromSuperview()
         view.addSubview(cornerMaskView)
-        // If the quick search overlay is mounted, keep it on top too — otherwise
-        // a tab swap would leave the overlay buried under the new web view.
-        if let overlay = quickSearchOverlay, overlay.isVisible {
-            overlay.bringToFront(in: view)
+    }
+
+    // MARK: - New Tab Wallpaper Overlay
+
+    /// Show/hide the native wallpaper overlay based on the tab's URL.
+    /// Called from displayTab (tab switch) and refreshNewTabOverlay (URL change).
+    private func updateNewTabWallpaper(for tab: BrowserTab?) {
+        guard let tab, tab.url == AppConstants.newTabURL else {
+            wallpaperView.removeFromSuperview()
+            return
         }
+        wallpaperView.setWallpaper(named: tab.newTabWallpaperName)
+        wallpaperView.frame = view.bounds
+        wallpaperView.autoresizingMask = [.width, .height]
+        if wallpaperView.superview !== view {
+            view.addSubview(wallpaperView)
+        }
+    }
+
+    /// Called by the polling loop when the selected tab's URL changes (e.g.
+    /// the user navigated from the new-tab page to a real URL). Shows or hides
+    /// the wallpaper to match.
+    func refreshNewTabOverlay() {
+        updateNewTabWallpaper(for: tabManager.selectedTab)
     }
 
     // MARK: - Navigation

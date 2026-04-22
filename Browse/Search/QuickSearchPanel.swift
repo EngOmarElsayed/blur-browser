@@ -27,7 +27,9 @@ final class QuickSearchOverlay {
         dimming.onClickOutside = { [weak self] in
             self?.dismiss()
         }
-        dimming.autoresizingMask = [.width, .height]
+        dimming.layer?.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
+        dimming.layer?.masksToBounds = true
+        dimming.layer?.cornerRadius = 16
         parent.addSubview(dimming)
         self.dimmingView = dimming
 

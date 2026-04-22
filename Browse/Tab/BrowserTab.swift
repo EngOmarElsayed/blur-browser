@@ -28,6 +28,11 @@ final class BrowserTab: Identifiable {
     /// in the address bar even if WKWebView reverts its internal URL on failure.
     var isProvisionalNavigationInFlight: Bool = false
 
+    /// When this tab is in "new tab" state (url == AppConstants.newTabURL), this
+    /// holds the wallpaper filename (no extension) chosen from the active theme.
+    /// Nil otherwise. Refreshed by BrowserWindowController on theme change.
+    var newTabWallpaperName: String?
+
     let webView: WKWebView
     private var observations: [NSKeyValueObservation] = []
 
@@ -48,6 +53,11 @@ final class BrowserTab: Identifiable {
         // Sync the initial color scheme to the active theme
         Self.syncColorScheme(wv)
 
+        // Pick a wallpaper for new-tab state; WebViewController reads this.
+        if url == AppConstants.newTabURL {
+            newTabWallpaperName = ThemeStore.shared.current.wallpaperNames.randomElement()
+        }
+
         if let url {
             Self.load(url, on: wv)
         }
@@ -57,6 +67,11 @@ final class BrowserTab: Identifiable {
     /// `file://` URLs use `loadFileURL(_:allowingReadAccessTo:)` with the parent
     /// directory so adjacent CSS/JS/image assets can be resolved.
     static func load(_ url: URL, on webView: WKWebView) {
+        // New-tab URL is rendered natively via NewTabWallpaperView rather than
+        // loaded through WKWebView — skip the WebKit round-trip entirely.
+        if url == AppConstants.newTabURL {
+            return
+        }
         if url.isFileURL {
             let readAccess = url.deletingLastPathComponent()
             webView.loadFileURL(url, allowingReadAccessTo: readAccess)
