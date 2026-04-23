@@ -1,8 +1,19 @@
 import { ContactForm } from "@/components/ContactForm";
 
-export const metadata = {
-  title: "Contact — Blur Browser",
-  description: "Say hi, report a bug, or suggest a feature.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description:
+    "Get in touch with the Blur Browser team. Report a bug, suggest a feature, or just say hi — we read every message.",
+  alternates: { canonical: "/contact" },
+  openGraph: {
+    title: "Contact · Blur Browser",
+    description:
+      "Get in touch with the Blur Browser team. Report a bug, suggest a feature, or just say hi.",
+    url: "https://blurbrowser.app/contact",
+    type: "website",
+  },
 };
 
 export default function ContactPage() {

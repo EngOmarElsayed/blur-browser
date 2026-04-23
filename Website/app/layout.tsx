@@ -1,15 +1,45 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { JsonLd } from "@/components/JsonLd";
 import "./globals.css";
 
+const SITE_URL = "https://blurbrowser.app";
+const DESCRIPTION =
+  "Blur Browser is a free, open-source macOS browser that automatically blurs adult images and videos as you browse. Built on WebKit. Private by default — no trackers, no telemetry.";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://blurbrowser.app"),
-  title: "Blur Browser — A calmer, safer web",
-  description:
-    "A native macOS browser that blurs adult content automatically. Built on WebKit. Free and open source.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Blur Browser — A calmer, safer macOS browser",
+    template: "%s · Blur Browser",
+  },
+  description: DESCRIPTION,
+  applicationName: "Blur Browser",
+  generator: "Next.js",
+  keywords: [
+    "Blur Browser",
+    "macOS browser",
+    "WebKit browser",
+    "adult content blur",
+    "safe browser",
+    "content filtering browser",
+    "private browser",
+    "open source browser",
+    "mac browser",
+    "Safari alternative",
+    "distraction-free browser",
+    "Zen mode browser",
+  ],
+  authors: [{ name: "Omar Elsayed", url: "https://github.com/EngOmarElsayed" }],
+  creator: "Omar Elsayed",
+  publisher: "Omar Elsayed",
+  category: "technology",
+  alternates: {
+    canonical: "/",
+  },
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -21,34 +51,60 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    url: "https://blurbrowser.app",
+    url: SITE_URL,
     siteName: "Blur Browser",
-    title: "Blur Browser — A calmer, safer web",
-    description:
-      "A native macOS browser that blurs adult content automatically. Built on WebKit. Free and open source.",
+    title: "Blur Browser — A calmer, safer macOS browser",
+    description: DESCRIPTION,
     locale: "en_US",
     images: [
       {
         url: "/main.png",
         width: 2730,
         height: 1632,
-        alt: "Blur Browser on macOS — a calmer, safer web",
+        alt: "Blur Browser on macOS — automatically blurs adult content",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blur Browser — A calmer, safer web",
+    title: "Blur Browser — A calmer, safer macOS browser",
     description:
-      "A native macOS browser that blurs adult content automatically. Built on WebKit.",
+      "A native macOS browser that blurs adult images and videos automatically. Built on WebKit. Free and open source.",
     images: ["/main.png"],
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  // Paste the verification token Google Search Console gives you (Settings →
+  // Ownership verification → HTML tag). Pulled from env so you can set it in
+  // Vercel without another code change.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F4F7FE" },
+    { media: "(prefers-color-scheme: dark)", color: "#13141C" },
+  ],
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col">
+        <JsonLd />
         <ThemeProvider>
           <Header />
           <main className="flex-1">{children}</main>
