@@ -1,0 +1,74 @@
+# Auto-redeploys the marketing site whenever a new release is published.
+#
+# Why this exists:
+# - The site's Hero, Final CTA, and JSON-LD structured data are all driven
+#   by `lib/github.ts` -> `getLatestRelease()`, which fetches the latest
+#   release from the GitHub API with Next.js ISR (revalidate: 3600).
+# - That means without intervention, a fresh release takes up to 1 hour to
+#   appear on blurbrowser.app.
+# - This workflow shortcuts that by triggering a Vercel deploy hook the
+#   moment a release is published. The redeploy busts the data cache, so
+#   the site reflects the new version within seconds.
+#
+# One-time setup:
+#   1. In Vercel, open the "blur-browser" project ->
+#      Settings -> Git -> Deploy Hooks
+#   2. Create a hook named "Release published" pointing at branch `main`.
+#      Vercel will give you a URL like
+#      https://api.vercel.com/v1/integrations/deploy/prj_XXX/YYY
+#   3. In this GitHub repo, open
+#      Settings -> Secrets and variables -> Actions -> New repository secret
+#   4. Name: VERCEL_DEPLOY_HOOK_URL  Value: (paste the URL from step 2)
+#   5. Commit this workflow. The next published release will trigger a
+#      deploy automatically.
+#
+# Manual trigger: from the Actions tab, run "Redeploy website on release"
+# with the workflow_dispatch button if you ever need to force a rebuild.
+
+name: Redeploy website on release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Trigger Vercel deploy hook
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify deploy hook is configured
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_URL" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK_URL secret is not set." \
+              "See .github/workflows/release-deploy.yml for setup instructions."
+            exit 1
+          fi
+
+      - name: Trigger Vercel deploy
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          response=$(curl -sS -X POST -w "\n%{http_code}" "$VERCEL_DEPLOY_HOOK_URL")
+          status=$(echo "$response" | tail -n 1)
+          body=$(echo "$response" | sed '$d')
+          echo "Deploy hook responded with HTTP $status"
+          echo "Body: $body"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Vercel deploy hook returned non-2xx status."
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Triggered Vercel deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Release: ${{ github.event.release.tag_name || 'manual' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Site: https://blurbrowser.app" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The site usually goes live within 30-60s." >> "$GITHUB_STEP_SUMMARY"

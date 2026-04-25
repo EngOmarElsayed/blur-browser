@@ -8,14 +8,15 @@ export interface LatestRelease {
 
 const REPO = "EngOmarElsayed/blur-browser";
 
-// Used if the GitHub API is unreachable at build/revalidate time. Keep this
-// in sync with the latest published tag so the site never shows stale info
-// for long, but remains usable if api.github.com is down.
+// Used only if the GitHub API is unreachable at build/revalidate time.
+// The .github/workflows/release-revalidate.yml workflow keeps this in sync
+// automatically — it bumps the constant on every release publish so we
+// never serve stale fallback data even if api.github.com is down for a while.
 const FALLBACK: LatestRelease = {
-  tag: "v0.8.0",
-  version: "0.8.0",
-  dmgUrl: `https://github.com/${REPO}/releases/download/v0.8.0/Blur-Browser-v0.8.0.dmg`,
-  notesUrl: `https://github.com/${REPO}/releases/tag/v0.8.0`,
+  tag: "v0.8.2",
+  version: "0.8.2",
+  dmgUrl: `https://github.com/${REPO}/releases/download/v0.8.2/Blur-Browser-v0.8.2.dmg`,
+  notesUrl: `https://github.com/${REPO}/releases/tag/v0.8.2`,
   publishedAt: null,
 };
 
