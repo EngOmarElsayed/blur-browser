@@ -48,7 +48,11 @@ final class ContentFilterService {
                 }
                 continuation.resume(returning: predictions)
             }
-            request.imageCropAndScaleOption = .scaleFill
+            // Inception v3 was trained on center-cropped ImageNet images.
+            // `.scaleFill` stretches non-square inputs, pushing them out of
+            // the training distribution and hurting accuracy. Center-crop
+            // matches the model's expected input geometry.
+            request.imageCropAndScaleOption = .centerCrop
             let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
             do {
                 try handler.perform([request])

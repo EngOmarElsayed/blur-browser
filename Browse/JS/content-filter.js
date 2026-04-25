@@ -13,7 +13,19 @@
 
     var style = document.createElement('style');
     style.id = '__sca-hide';
-    style.textContent = 'img:not([data-sca-done]) { opacity: 0 !important; transition: opacity 0.15s ease !important; }';
+    // Pre-classification placeholder: heavy blur so the raw pixels never
+    // flash — including inside lightboxes where a fresh <img> DOM node
+    // is created on tap. We gate on `data-sca-safe` (set only after the
+    // classifier says it's safe) rather than `data-sca-done` so cloned
+    // DOM nodes don't accidentally inherit an "unhide" signal.
+    style.textContent =
+        'img:not([data-sca-safe]) {' +
+        '  filter: blur(60px) !important;' +
+        '  transform: scale(1.6) !important;' +
+        '  transform-origin: 50% 50% !important;' +
+        '  clip-path: inset(0) !important;' +
+        '  transition: filter 0.15s ease, transform 0.15s ease !important;' +
+        '}';
     (document.head || document.documentElement).appendChild(style);
 
     function hideEl(el) {
@@ -25,10 +37,24 @@
         if (el.nodeName !== 'IMG') {
             el.style.opacity = '0';
             el.style.transition = 'opacity 0.15s ease';
+        } else if (!el.hasAttribute('data-sca-safe')) {
+            // Set inline !important blur immediately on insertion so the raw
+            // pixels cannot paint even for one frame — the global stylesheet
+            // rule can be outraced by Twitter's lightbox if it forces sync
+            // layout between DOM insertion and our MutationObserver callback.
+            el.style.setProperty('filter', 'blur(60px)', 'important');
+            el.style.setProperty('transform', 'scale(1.6)', 'important');
+            el.style.setProperty('transform-origin', '50% 50%', 'important');
+            el.style.setProperty('clip-path', 'inset(0)', 'important');
         }
         el.__scaTimer = setTimeout(function() {
             if (!el.__scaDone) {
                 el.setAttribute('data-sca-done', '1');
+                el.setAttribute('data-sca-safe', '1');
+                el.style.removeProperty('filter');
+                el.style.removeProperty('transform');
+                el.style.removeProperty('transform-origin');
+                el.style.removeProperty('clip-path');
                 el.style.opacity = '1';
                 el.__scaDone = true;
             }
@@ -37,6 +63,7 @@
 
     function rehideEl(el) {
         el.removeAttribute('data-sca-done');
+        el.removeAttribute('data-sca-safe');
         if (el.dataset && el.dataset.sensitiveId && window.__scaSentIds) {
             window.__scaSentIds.delete(el.dataset.sensitiveId);
         }

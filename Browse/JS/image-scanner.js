@@ -28,6 +28,13 @@
     function revealEl(el) {
         markDone(el);
         el.setAttribute('data-sca-done', '1');
+        el.setAttribute('data-sca-safe', '1');
+        // Clear the placeholder blur that content-filter's hideEl applies
+        // inline on insertion. Without this, safe images stay blurred.
+        el.style.removeProperty('filter');
+        el.style.removeProperty('transform');
+        el.style.removeProperty('transform-origin');
+        el.style.removeProperty('clip-path');
         el.style.opacity = '1';
     }
 

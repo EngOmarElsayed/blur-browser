@@ -67,13 +67,20 @@
             var wasBlurred = blurState[id] || false;
 
             if (shouldBlur && !wasBlurred) {
-                video.style.filter = 'blur(30px)';
-                video.style.clipPath = 'inset(0)';
+                // See blurImageJS in WebViewCoordinator.swift for rationale —
+                // scale pushes the faded edge halo outside the parent's
+                // overflow clip so the full frame is actually covered.
+                video.style.setProperty('filter', 'blur(30px)', 'important');
+                video.style.setProperty('clip-path', 'inset(0)', 'important');
+                video.style.setProperty('transform', 'scale(1.25)', 'important');
+                video.style.setProperty('transform-origin', '50% 50%', 'important');
                 blurState[id] = true;
                 log('BLUR applied: ' + id);
             } else if (!shouldBlur && wasBlurred) {
-                video.style.filter = '';
-                video.style.clipPath = '';
+                video.style.removeProperty('filter');
+                video.style.removeProperty('clip-path');
+                video.style.removeProperty('transform');
+                video.style.removeProperty('transform-origin');
                 blurState[id] = false;
                 log('BLUR removed: ' + id);
             }

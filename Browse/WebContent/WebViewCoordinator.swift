@@ -158,17 +158,39 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
     // MARK: - Blur / Reveal JS
 
     static func blurImageJS(elementId: String, blurRadius: Int = 30) -> String {
+        // CSS `filter: blur()` fades the element's edges toward transparent
+        // (the blur kernel samples "outside" as transparent pixels), which on
+        // sites like Twitter/X lets the underlying image leak through the
+        // perimeter. Clip-path alone preserves that inner fade.
+        //
+        // Fix: also apply `transform: scale(1.25)` so the faded edge halo is
+        // pushed outside the parent container's `overflow: hidden` clip,
+        // leaving only the fully-blurred interior visible. Use !important so
+        // site CSS / React re-renders can't override us mid-frame.
         """
         (function() {
             var el = document.querySelector('[data-sensitive-id="\(elementId)"]');
             if (!el) return 'not_found';
             if (el.__scaTimer) { clearTimeout(el.__scaTimer); el.__scaTimer = null; }
             el.__scaDone = true;
-            el.style.filter = 'blur(\(blurRadius)px)';
-            el.style.clipPath = 'inset(0)';
-            el.style.overflow = 'hidden';
+            el.style.setProperty('filter', 'blur(\(blurRadius)px)', 'important');
+            el.style.setProperty('clip-path', 'inset(0)', 'important');
+            el.style.setProperty('transform', 'scale(1.6)', 'important');
+            el.style.setProperty('transform-origin', '50% 50%', 'important');
+            // Also blur immediate parent container — Twitter/X often lets the
+            // img's fade halo leak past the container's rounded clip. Blurring
+            // the parent's rendered output makes the perimeter unrecognizable
+            // regardless of the element-level fade.
+            var __scaParent = el.parentElement;
+            if (__scaParent && !__scaParent.__scaParentBlurred) {
+                __scaParent.__scaParentBlurred = true;
+                __scaParent.__scaParentOrigFilter = __scaParent.style.filter || '';
+                __scaParent.style.setProperty('filter', 'blur(12px)', 'important');
+                __scaParent.style.setProperty('overflow', 'hidden', 'important');
+            }
             el.offsetHeight;
             el.setAttribute('data-sca-done', '1');
+            el.removeAttribute('data-sca-safe');
             el.style.transition = 'opacity 0.15s ease';
             el.style.opacity = '1';
             return 'blurred';
@@ -183,7 +205,21 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
             if (!el) return 'not_found';
             if (el.__scaTimer) { clearTimeout(el.__scaTimer); el.__scaTimer = null; }
             el.__scaDone = true;
+            el.style.removeProperty('filter');
+            el.style.removeProperty('clip-path');
+            el.style.removeProperty('transform');
+            el.style.removeProperty('transform-origin');
+            var __scaParent = el.parentElement;
+            if (__scaParent && __scaParent.__scaParentBlurred) {
+                __scaParent.__scaParentBlurred = false;
+                if (__scaParent.__scaParentOrigFilter) {
+                    __scaParent.style.filter = __scaParent.__scaParentOrigFilter;
+                } else {
+                    __scaParent.style.removeProperty('filter');
+                }
+            }
             el.setAttribute('data-sca-done', '1');
+            el.setAttribute('data-sca-safe', '1');
             el.style.opacity = '1';
             return 'revealed';
         })();
