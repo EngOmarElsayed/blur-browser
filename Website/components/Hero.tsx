@@ -82,10 +82,10 @@ export async function Hero() {
               Download for macOS
             </a>
             <Link
-              href="/#features"
+              href="/#how-it-works"
               className="rounded-full border border-border/70 bg-chrome/70 px-6 py-3 text-sm font-semibold text-foreground hover:bg-chrome transition"
             >
-              See features
+              How it works
             </Link>
           </div>
 
