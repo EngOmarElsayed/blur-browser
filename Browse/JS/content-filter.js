@@ -25,6 +25,9 @@
         '  transform-origin: 50% 50% !important;' +
         '  clip-path: inset(0) !important;' +
         '  transition: filter 0.15s ease, transform 0.15s ease !important;' +
+        '  -webkit-user-drag: none !important;' +
+        '  user-select: none !important;' +
+        '  -webkit-user-select: none !important;' +
         '}';
     (document.head || document.documentElement).appendChild(style);
 
@@ -46,6 +49,10 @@
             el.style.setProperty('transform', 'scale(1.6)', 'important');
             el.style.setProperty('transform-origin', '50% 50%', 'important');
             el.style.setProperty('clip-path', 'inset(0)', 'important');
+            // Block dragging the original (unblurred) source out of the page.
+            // CSS filter is purely cosmetic — without this, dragging the <img>
+            // to the desktop would write the raw image file.
+            el.setAttribute('draggable', 'false');
         }
         el.__scaTimer = setTimeout(function() {
             if (!el.__scaDone) {
@@ -100,4 +107,39 @@
             }
         }
     }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PHASE 4: Block exfiltration of unblurred pixels
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // CSS blur is cosmetic — the underlying <img>/<video> still holds the raw
+    // source. Dragging to the Finder, right-click → Save Image As, or copy
+    // would all expose the original bytes. Capture-phase listeners run before
+    // any site handlers and survive React re-renders (no DOM attribute needed).
+    function shouldBlock(el) {
+        if (!el || !el.nodeName) return false;
+        var tag = el.nodeName;
+        if (tag === 'IMG') {
+            return !el.hasAttribute || !el.hasAttribute('data-sca-safe');
+        }
+        if (tag === 'VIDEO') {
+            // Videos don't carry data-sca-safe — check inline filter instead.
+            var f = (el.style && el.style.filter) || '';
+            return f.indexOf('blur') !== -1;
+        }
+        return false;
+    }
+    function blockEvent(e) {
+        if (shouldBlock(e.target)) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }
+    // dragstart  → drag-to-Finder, drag-to-other-app
+    // contextmenu → right-click → Save Image As / Copy Image
+    // copy/cut   → ⌘C on a selected/focused image
+    var blockedEvents = ['dragstart', 'contextmenu', 'copy', 'cut'];
+    for (var i = 0; i < blockedEvents.length; i++) {
+        document.addEventListener(blockedEvents[i], blockEvent, true);
+    }
 })();

@@ -191,6 +191,7 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
             el.offsetHeight;
             el.setAttribute('data-sca-done', '1');
             el.removeAttribute('data-sca-safe');
+            el.setAttribute('draggable', 'false');
             el.style.transition = 'opacity 0.15s ease';
             el.style.opacity = '1';
             return 'blurred';
@@ -220,6 +221,7 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
             }
             el.setAttribute('data-sca-done', '1');
             el.setAttribute('data-sca-safe', '1');
+            el.removeAttribute('draggable');
             el.style.opacity = '1';
             return 'revealed';
         })();
