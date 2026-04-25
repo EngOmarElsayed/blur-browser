@@ -63,23 +63,27 @@ final class ContentFilterService {
         }
     }
 
-    /// NSFW if any of porn/hentai/sexy >= 0.5, OR neutral < 0.5
+    /// Multi-signal NSFW detection. The model scores suggestive content (bikini /
+    /// lingerie / fitness) around 0.30-0.40 on `sexy` — single-threshold 0.50
+    /// misses everything in that band. We trigger when ANY of:
+    ///   - porn   ≥ 0.40
+    ///   - hentai ≥ 0.40
+    ///   - sexy   ≥ 0.30
+    ///   - porn + hentai + sexy ≥ 0.50  (diffuse signal across categories)
+    ///   - neutral < 0.30 AND drawings < 0.30 (nothing scores safe)
     func isNSFW(_ results: [Prediction]) -> Bool {
-        for result in results where nsfwCategories.contains(result.label) {
-            if result.confidence >= 0.5 {
-                return true
-            }
-        }
+        let porn     = results.first(where: { $0.label == "porn"})?.confidence ?? 0
+        let hentai   = results.first(where: { $0.label == "hentai"})?.confidence ?? 0
+        let sexy     = results.first(where: { $0.label == "sexy"})?.confidence ?? 0
+        let neutral  = results.first(where: { $0.label == "neutral"})?.confidence ?? 0
+        let drawings = results.first(where: { $0.label == "drawings"})?.confidence ?? 0
 
-        let neutralConfidence = results.first(where: { $0.label == "neutral" })?.confidence ?? 0
-        let drawingsConfidence = results.first(where: { $0.label == "drawings" })?.confidence ?? 0
+        if porn   >= 0.40 { return true }
+        if hentai >= 0.40 { return true }
+        if sexy   >= 0.30 { return true }
+        if (porn + hentai + sexy) >= 0.50 { return true }
 
-        let pornConfidence = results.first(where: { $0.label == "porn" })?.confidence ?? 0
-        let hentaiConfidence = results.first(where: { $0.label == "hentai" })?.confidence ?? 0
-        let sexyConfidence = results.first(where: { $0.label == "sexy" })?.confidence ?? 0
-//        let compaination = pornConfidence + sexyConfidence + hentaiConfidence
-
-        return (neutralConfidence < 0.5 && drawingsConfidence < 0.5) && (pornConfidence >= 0.5 || hentaiConfidence >= 0.5 || sexyConfidence >= 0.5)
+        return false
     }
 
     /// Format all results into a readable string for logging.
