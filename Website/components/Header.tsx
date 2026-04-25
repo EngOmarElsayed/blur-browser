@@ -17,7 +17,6 @@ export function Header() {
             width={32}
             height={32}
             className="rounded-lg"
-            priority
           />
           <span className="text-base font-semibold tracking-tight text-foreground">
             Blur
@@ -28,10 +27,10 @@ export function Header() {
         </Link>
 
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-sm text-foreground/70 sm:flex">
-          <Link href="/#features" className="hover:text-foreground transition">
-            Features
+          <Link href="/#how-it-works" className="hover:text-foreground transition">
+            How it works
           </Link>
-          <Link href="/#about" className="hover:text-foreground transition">
+          <Link href="/about" className="hover:text-foreground transition">
             About
           </Link>
           <Link href="/contact" className="hover:text-foreground transition">

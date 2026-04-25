@@ -10,8 +10,8 @@ export function Footer() {
           <span className="text-sm font-semibold text-foreground">Blur Browser</span>
         </Link>
         <div className="flex items-center gap-6 text-sm text-foreground/70">
-          <Link href="/#features" className="hover:text-foreground transition">Features</Link>
-          <Link href="/#about" className="hover:text-foreground transition">About</Link>
+          <Link href="/#how-it-works" className="hover:text-foreground transition">How it works</Link>
+          <Link href="/about" className="hover:text-foreground transition">About</Link>
           <Link href="/contact" className="hover:text-foreground transition">Contact</Link>
         </div>
         <p className="text-xs text-foreground/50">

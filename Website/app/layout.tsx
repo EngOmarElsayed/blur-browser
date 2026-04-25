@@ -7,8 +7,17 @@ import { JsonLd } from "@/components/JsonLd";
 import "./globals.css";
 
 const SITE_URL = "https://blurbrowser.app";
+
+// Kept under 160 characters so Google doesn't truncate it in SERPs.
+// Voice mirrors the home-page hero: native macOS, on-device AI, real time,
+// open source — the four facts a cold visitor needs to decide if it's for them.
 const DESCRIPTION =
-  "Blur Browser is a free, open-source macOS browser that automatically blurs adult images and videos as you browse. Built on WebKit. Private by default — no trackers, no telemetry.";
+  "A native macOS browser. On-device AI softens adult images and videos in real time. Free, open source, built on WebKit. No trackers, no telemetry.";
+
+// Slightly longer Twitter/OG description — these surfaces don't truncate as
+// aggressively, so we have room for the "calmer, safer" hook from the brand.
+const SOCIAL_DESCRIPTION =
+  "A calmer, safer macOS browser. On-device AI softens adult images and videos in real time, on your GPU — so the web stays as fast as Safari. Free and open source, forever.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -23,14 +32,14 @@ export const metadata: Metadata = {
     "Blur Browser",
     "macOS browser",
     "WebKit browser",
+    "on-device AI browser",
     "adult content blur",
-    "safe browser",
+    "AI content filter",
     "content filtering browser",
     "private browser",
     "open source browser",
     "mac browser",
     "Safari alternative",
-    "distraction-free browser",
     "Zen mode browser",
   ],
   authors: [{ name: "Omar Elsayed", url: "https://github.com/EngOmarElsayed" }],
@@ -54,23 +63,23 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: "Blur Browser",
     title: "Blur Browser — A calmer, safer macOS browser",
-    description: DESCRIPTION,
+    description: SOCIAL_DESCRIPTION,
     locale: "en_US",
     images: [
       {
-        url: "/main.png",
-        width: 2730,
-        height: 1632,
-        alt: "Blur Browser on macOS — automatically blurs adult content",
+        url: "/poster.jpg",
+        width: 1554,
+        height: 1080,
+        alt: "Blur Browser on macOS — on-device AI softens adult images and videos in real time",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Blur Browser — A calmer, safer macOS browser",
-    description:
-      "A native macOS browser that blurs adult images and videos automatically. Built on WebKit. Free and open source.",
-    images: ["/main.png"],
+    description: SOCIAL_DESCRIPTION,
+    images: ["/poster.jpg"],
+    creator: "@EngOmarElsayed",
   },
   robots: {
     index: true,

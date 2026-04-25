@@ -1,17 +1,23 @@
+import { getLatestRelease } from "@/lib/github";
+
 const SITE_URL = "https://blurbrowser.app";
 const REPO_URL = "https://github.com/EngOmarElsayed/blur-browser";
 
 /**
  * Emits JSON-LD structured data for the Blur Browser site.
  *
- * Uses two linked graph nodes:
- *  - SoftwareApplication: describes the macOS browser itself (helps Google
- *    render a rich result with rating/price/OS requirements).
- *  - Organization: describes the project/author, wiring up the GitHub /
- *    sponsors profile as sameAs links for entity consolidation.
- *  - WebSite: enables the sitelinks search box in SERPs.
+ * Three linked nodes:
+ *  - SoftwareApplication: describes the macOS browser itself, so Google can
+ *    render a rich app card (rating, price, OS, version). softwareVersion
+ *    is pulled live from the latest GitHub release so we never ship stale
+ *    metadata.
+ *  - Organization: describes the maker, wiring up GitHub + Sponsors as
+ *    sameAs links so Google consolidates the entity.
+ *  - WebSite: makes the site eligible for the SERP sitelinks search box.
  */
-export function JsonLd() {
+export async function JsonLd() {
+  const release = await getLatestRelease();
+
   const graph = {
     "@context": "https://schema.org",
     "@graph": [
@@ -20,29 +26,32 @@ export function JsonLd() {
         "@id": `${SITE_URL}/#software`,
         name: "Blur Browser",
         applicationCategory: "BrowserApplication",
+        applicationSubCategory: "WebBrowser",
         operatingSystem: "macOS 14 and later",
         description:
-          "A native macOS browser that blurs adult images and videos automatically. Built on WebKit. Free and open source.",
+          "A native macOS browser. On-device AI softens adult images and videos in real time, on your GPU. Built on WebKit. Free and open source.",
         url: SITE_URL,
         downloadUrl: `${REPO_URL}/releases/latest`,
-        softwareVersion: "0.8.0",
+        softwareVersion: release.version,
+        releaseNotes: release.notesUrl,
         offers: {
           "@type": "Offer",
           price: "0",
           priceCurrency: "USD",
         },
         featureList: [
-          "Automatic blur for adult images and videos",
+          "On-device AI that softens adult images and videos in real time",
+          "GPU-accelerated detection — no server round-trips",
           "Vertical sidebar tab list",
-          "7 built-in themes",
+          "Seven hand-crafted themes",
           "Keyboard shortcuts with ⌘+/ overview",
           "Quick Search (⌘K) across tabs, history, and the web",
-          "Zen mode",
-          "Website blocking (coming soon)",
-          "Built on WebKit",
+          "Zen mode for distraction-free browsing",
+          "Built on WebKit — fast, battery-friendly, web-standards-honest",
+          "Open source under MIT — no trackers, no telemetry",
         ],
         author: { "@id": `${SITE_URL}/#author` },
-        image: `${SITE_URL}/main.png`,
+        image: `${SITE_URL}/poster.jpg`,
       },
       {
         "@type": "Organization",
@@ -62,7 +71,7 @@ export function JsonLd() {
         url: SITE_URL,
         name: "Blur Browser",
         description:
-          "A calmer, safer macOS browser. Free and open source.",
+          "A calmer, safer macOS browser. On-device AI by default. Free and open source.",
         publisher: { "@id": `${SITE_URL}/#author` },
         inLanguage: "en",
       },

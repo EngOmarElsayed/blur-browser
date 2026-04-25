@@ -2,13 +2,6 @@ import Image from "next/image";
 
 const features = [
   {
-    title: "Blur adult content",
-    description:
-      "Blur automatically detects and softens adult images and videos as you browse — not just stills, but motion too. Nothing catches you off guard.",
-    badge: "Core",
-    screenshot: "/blur.png",
-  },
-  {
     title: "Vertical sidebar",
     description:
       "Tabs live on the left, stacked vertically like a calm reading list. More room for page titles, less eye-darting along a cramped top bar.",
@@ -64,13 +57,6 @@ const features = [
     badge: "Core",
     screenshot: null,
   },
-  {
-    title: "Website blocking",
-    description:
-      "Block entire domains at the browser level. No extensions, no workarounds — it just doesn't load.",
-    badge: "Coming soon",
-    screenshot: null,
-  },
 ];
 
 export function Features() {
@@ -79,13 +65,16 @@ export function Features() {
       <div className="mx-auto max-w-6xl px-6 py-24">
         <div className="mb-16 max-w-2xl">
           <div className="mb-4 text-xs font-semibold uppercase tracking-widest text-accent">
-            Features
+            Beyond the blur
           </div>
           <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Everything you need. Nothing you don't.
+            And it's a delight to use, too.
           </h2>
-          <p className="mt-4 text-lg text-foreground/70">
-            A focused set of tools built around a simple promise: a calmer web.
+          <p className="mt-4 text-lg leading-relaxed text-foreground/70">
+            The safety is the headline. Everything else is what makes Blur
+            worth opening every day — seven hand-crafted themes, ⌘K
+            everywhere, Zen mode for deep work, and a few small jokes hiding
+            in the error pages.
           </p>
         </div>
 

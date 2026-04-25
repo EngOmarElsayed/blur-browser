@@ -1,6 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getLatestRelease } from "@/lib/github";
+import { HeroVideo } from "./HeroVideo";
+
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      className="text-accent"
+      aria-hidden="true"
+    >
+      <path
+        d="M3 7l3 3 5-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export async function Hero() {
   const release = await getLatestRelease();
@@ -26,8 +48,11 @@ export async function Hero() {
             priority
           />
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border/60 bg-chrome/60 px-3 py-1 text-xs font-medium text-foreground/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-            Free & open source, forever
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent" />
+            </span>
+            Beta · Free & open source forever
           </div>
           <h1 className="max-w-3xl text-4xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-6xl">
             The browser that{" "}
@@ -40,10 +65,10 @@ export async function Hero() {
             </span>{" "}
             what you don't want to see.
           </h1>
-          <p className="mt-6 max-w-2xl text-lg text-foreground/70">
-            Blur is a native macOS browser that protects you from adult content by blurring
-            it automatically — with website blocking and more on the way. Built on WebKit.
-            Designed for calm, focused browsing.
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground/70">
+            Native macOS browser. On-device AI softens adult images and
+            videos in real time as you browse — across social feeds,
+            streaming services, anywhere on the web. Built on WebKit.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -73,17 +98,25 @@ export async function Hero() {
             {release.tag} · Release notes ↗
           </a>
 
+          {/* Trust micro-row — the four claims most likely to overcome the
+              "should I install a beta browser?" hesitation. */}
+          <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-foreground/60">
+            <li className="flex items-center gap-1.5">
+              <CheckIcon /> Free forever
+            </li>
+            <li className="flex items-center gap-1.5">
+              <CheckIcon /> No trackers
+            </li>
+            <li className="flex items-center gap-1.5">
+              <CheckIcon /> On-device AI
+            </li>
+            <li className="flex items-center gap-1.5">
+              <CheckIcon /> Built on WebKit
+            </li>
+          </ul>
+
           <div className="mt-16 w-full max-w-5xl">
-            <div className="relative aspect-[2778/1672] w-full overflow-hidden rounded-2xl border border-border/60 bg-chrome/50 shadow-2xl">
-              <Image
-                src="/main.png"
-                alt="Blur Browser main window"
-                fill
-                sizes="(min-width: 1024px) 1024px, 100vw"
-                className="object-cover"
-                priority
-              />
-            </div>
+            <HeroVideo src="/main.MOV" poster="/poster.jpg" />
           </div>
         </div>
       </div>
