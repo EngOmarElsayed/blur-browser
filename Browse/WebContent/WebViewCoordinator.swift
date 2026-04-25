@@ -398,6 +398,77 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
         return nil
     }
 
+    // MARK: - JavaScript Dialogs (alert / confirm / prompt)
+    //
+    // WKWebView silently no-ops these unless we implement the WKUIDelegate
+    // methods. Without confirm(), GitHub-style "discard unsaved changes?"
+    // prompts effectively auto-answer "OK", letting navigation through.
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptAlertPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor @Sendable () -> Void
+    ) {
+        let alert = NSAlert()
+        alert.messageText = frame.request.url?.host ?? "JavaScript"
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        guard let window = webView.window else {
+            completionHandler()
+            return
+        }
+        alert.beginSheetModal(for: window) { _ in
+            completionHandler()
+        }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptConfirmPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor @Sendable (Bool) -> Void
+    ) {
+        let alert = NSAlert()
+        alert.messageText = frame.request.url?.host ?? "JavaScript"
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+        guard let window = webView.window else {
+            completionHandler(false)
+            return
+        }
+        alert.beginSheetModal(for: window) { response in
+            completionHandler(response == .alertFirstButtonReturn)
+        }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptTextInputPanelWithPrompt prompt: String,
+        defaultText: String?,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor @Sendable (String?) -> Void
+    ) {
+        let alert = NSAlert()
+        alert.messageText = frame.request.url?.host ?? "JavaScript"
+        alert.informativeText = prompt
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+
+        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 280, height: 22))
+        input.stringValue = defaultText ?? ""
+        alert.accessoryView = input
+
+        guard let window = webView.window else {
+            completionHandler(nil)
+            return
+        }
+        alert.beginSheetModal(for: window) { response in
+            completionHandler(response == .alertFirstButtonReturn ? input.stringValue : nil)
+        }
+    }
+
     // MARK: - File Upload Panel
 
     func webView(
