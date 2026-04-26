@@ -85,7 +85,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func closeCurrentTab(_ sender: Any?) {
-        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
+        // ⌘W is forced to AppDelegate (otherwise WKWebView captures it).
+        // That means we have to dispatch by key-window type ourselves —
+        // for non-browser windows (Settings), close the window itself.
+        let keyWindow = NSApp.keyWindow
+        if keyWindow?.windowController is SettingsWindowController {
+            keyWindow?.close()
+            return
+        }
+        guard let wc = keyWindow?.windowController as? BrowserWindowController else { return }
         wc.closeCurrentTab()
     }
 

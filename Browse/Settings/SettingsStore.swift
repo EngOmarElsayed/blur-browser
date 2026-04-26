@@ -3,6 +3,7 @@ import Observation
 
 // MARK: - Search Engine
 
+// Will add this feature later
 enum SearchEngine: String, CaseIterable, Identifiable, Sendable {
     case google
     case duckduckgo
@@ -49,7 +50,7 @@ final class SettingsStore {
 
     private let defaults = UserDefaults.standard
 
-    private enum Keys {
+    enum Keys {
         static let homepageURL = "settings.homepageURL"
         static let searchEngine = "settings.searchEngine"
         static let restoreTabsOnLaunch = "settings.restoreTabsOnLaunch"
@@ -77,6 +78,5 @@ final class SettingsStore {
             if defaults.object(forKey: Keys.restoreTabsOnLaunch) == nil { return true }
             return defaults.bool(forKey: Keys.restoreTabsOnLaunch)
         }
-        set { defaults.set(newValue, forKey: Keys.restoreTabsOnLaunch) }
     }
 }

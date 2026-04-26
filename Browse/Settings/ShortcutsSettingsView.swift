@@ -1,100 +1,61 @@
 import SwiftUI
 
+/// Mirrors the visual layout of `ShortcutsOverlayView` (the ⌘/ cheat sheet)
+/// so the Settings tab and the overlay look identical. Both views read from
+/// `ShortcutsCatalog` — the single source of truth for shortcut bindings.
 struct ShortcutsSettingsView: View {
 
-    private struct ShortcutEntry: Identifiable {
-        let id = UUID()
-        let action: String
-        let shortcut: String
-    }
-
-    private let shortcuts: [ShortcutEntry] = [
-        // File
-        ShortcutEntry(action: "New Tab", shortcut: "⌘T"),
-        ShortcutEntry(action: "Quick Search", shortcut: "⌘K"),
-        ShortcutEntry(action: "New Window", shortcut: "⌘N"),
-        ShortcutEntry(action: "Open Location", shortcut: "⌘L"),
-        ShortcutEntry(action: "Close Tab", shortcut: "⌘W"),
-        // Edit
-        ShortcutEntry(action: "Find in Page", shortcut: "⌘F"),
-        ShortcutEntry(action: "Find Next", shortcut: "⌘G"),
-        ShortcutEntry(action: "Find Previous", shortcut: "⇧⌘G"),
-        ShortcutEntry(action: "Copy URL", shortcut: "⇧⌘C"),
-        // View
-        ShortcutEntry(action: "Toggle Sidebar", shortcut: "⌘\\"),
-        ShortcutEntry(action: "Toggle Sidebar (Alt)", shortcut: "⇧⌘\\"),
-        ShortcutEntry(action: "Zen Mode", shortcut: "⇧⌘F"),
-        ShortcutEntry(action: "Toggle Address Bar", shortcut: "⇧⌘A"),
-        ShortcutEntry(action: "Reload", shortcut: "⌘R"),
-        ShortcutEntry(action: "Hard Reload", shortcut: "⇧⌘R"),
-        ShortcutEntry(action: "Web Inspector", shortcut: "⌥⌘C"),
-        ShortcutEntry(action: "Easy Read", shortcut: "⇧⌘E"),
-        ShortcutEntry(action: "Show Downloads", shortcut: "⌥⌘L"),
-        // History
-        ShortcutEntry(action: "Show History", shortcut: "⌘Y"),
-        ShortcutEntry(action: "Back", shortcut: "⌘["),
-        ShortcutEntry(action: "Forward", shortcut: "⌘]"),
-        // Window
-        ShortcutEntry(action: "Next Tab", shortcut: "⇧⌘]"),
-        ShortcutEntry(action: "Previous Tab", shortcut: "⇧⌘["),
-        ShortcutEntry(action: "Select Tab 1–9", shortcut: "⌘1 – ⌘9"),
-        // App
-        ShortcutEntry(action: "Settings", shortcut: "⌘,"),
+    private let gridColumns = [
+        GridItem(.flexible(), spacing: 20),
+        GridItem(.flexible(), spacing: 20),
     ]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Keyboard Shortcuts")
-                    .font(.custom(Typography.fontFamily, size: 14).weight(.semibold))
-                    .foregroundStyle(SettingsColors.fgPrimary)
-
-                SettingsTable {
-                    // Header
-                    SettingsTableHeader {
-                        Text("Action")
-                            .font(.custom(Typography.fontFamily, size: 11).weight(.semibold))
-                            .foregroundStyle(SettingsColors.fgSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 12)
-
-                        Text("Shortcut")
-                            .font(.custom(Typography.fontFamily, size: 11).weight(.semibold))
-                            .foregroundStyle(SettingsColors.fgSecondary)
-                            .frame(width: 140, alignment: .trailing)
-                            .padding(.trailing, 12)
-                    }
-                    .frame(height: 28)
-
-                    // Rows
-                    LazyVStack(spacing: 0) {
-                        ForEach(shortcuts) { entry in
-                            HStack(spacing: 0) {
-                                Text(entry.action)
-                                    .font(.custom(Typography.fontFamily, size: 12))
-                                    .foregroundStyle(SettingsColors.fgPrimary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 12)
-
-                                Text(entry.shortcut)
-                                    .font(.custom(Typography.monoFamily, size: 11))
-                                    .foregroundStyle(SettingsColors.fgSecondary)
-                                    .frame(width: 140, alignment: .trailing)
-                                    .padding(.trailing, 12)
-                            }
-                            .frame(height: 26)
-                            .background(Color.white)
-                            .overlay(alignment: .top) {
-                                Rectangle()
-                                    .fill(SettingsColors.borderLight)
-                                    .frame(height: 1)
-                            }
-                        }
-                    }
+            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 20) {
+                ForEach(ShortcutsCatalog.sections) { section in
+                    sectionView(section)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Section
+
+    private func sectionView(_ section: ShortcutSection) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(section.title.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color(nsColor: Colors.accentPrimary))
+                .tracking(0.5)
+
+            VStack(spacing: 4) {
+                ForEach(section.items) { item in
+                    shortcutRow(item)
+                }
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func shortcutRow(_ item: AppShortcut) -> some View {
+        HStack(spacing: 8) {
+            Text(item.action)
+                .font(.system(size: 13))
+                .foregroundStyle(Color(nsColor: NSColor(hex: "#142236")))
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(item.shortcut)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color(nsColor: Colors.surfacePrimary))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(nsColor: Colors.accentPrimary).opacity(0.5))
+                )
+        }
     }
 }

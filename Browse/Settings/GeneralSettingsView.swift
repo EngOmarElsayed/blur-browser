@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct GeneralSettingsView: View {
+    @AppStorage(SettingsStore.Keys.restoreTabsOnLaunch) var restoreTabsOnLaunch: Bool = false
     @State private var store = SettingsStore.shared
     @State private var isDefaultBrowser = false
 
@@ -11,11 +12,11 @@ struct GeneralSettingsView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Default Browser")
                         .font(.custom(Typography.fontFamily, size: 13))
-                        .foregroundStyle(SettingsColors.fgPrimary)
+                        .foregroundStyle(Color(nsColor: Colors.onSurfacePrimary))
 
                     Text(isDefaultBrowser ? "Blur-Browser is your default browser." : "Make Blur-Browser your default web browser.")
                         .font(.custom(Typography.fontFamily, size: 11))
-                        .foregroundStyle(SettingsColors.fgSecondary)
+                        .foregroundStyle(Color(nsColor: Colors.onSurfaceMuted))
                 }
 
                 Spacer()
@@ -48,35 +49,35 @@ struct GeneralSettingsView: View {
             Divider()
                 .foregroundStyle(SettingsColors.borderLight)
 
-            // Homepage
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Homepage")
-                    .font(.custom(Typography.fontFamily, size: 12))
-                    .foregroundStyle(SettingsColors.fgSecondary)
+//            Homepage
+//            VStack(alignment: .leading, spacing: 6) {
+//                Text("Homepage")
+//                    .font(.custom(Typography.fontFamily, size: 12))
+//                    .foregroundStyle(SettingsColors.fgSecondary)
+//
+//                SettingsTextField(text: $store.homepageURL, placeholder: "https://google.com")
+//            }
 
-                SettingsTextField(text: $store.homepageURL, placeholder: "https://google.com")
-            }
-
-            // Search Engine
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Search Engine")
-                    .font(.custom(Typography.fontFamily, size: 12))
-                    .foregroundStyle(SettingsColors.fgSecondary)
-
-                SettingsPicker(selection: $store.searchEngine, options: SearchEngine.allCases) { engine in
-                    engine.displayName
-                }
-            }
+//            // Search Engine
+//            VStack(alignment: .leading, spacing: 6) {
+//                Text("Search Engine")
+//                    .font(.custom(Typography.fontFamily, size: 12))
+//                    .foregroundStyle(SettingsColors.fgSecondary)
+//
+//                SettingsPicker(selection: $store.searchEngine, options: SearchEngine.allCases) { engine in
+//                    engine.displayName
+//                }
+//            }
 
             // Restore tabs on launch
             HStack {
                 Text("Restore tabs on launch")
                     .font(.custom(Typography.fontFamily, size: 13))
-                    .foregroundStyle(SettingsColors.fgPrimary)
+                    .foregroundStyle(Color(nsColor: Colors.onSurfacePrimary))
 
                 Spacer()
 
-                SettingsToggle(isOn: $store.restoreTabsOnLaunch)
+                SettingsToggle(isOn: $restoreTabsOnLaunch)
             }
 
             Spacer()
@@ -173,11 +174,8 @@ struct SettingsToggle: View {
 
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isOn.toggle()
-            }
+            isOn.toggle()
         } label: {
-            let _ = print("isOn: \(isOn)")
             ZStack(alignment: isOn ? .trailing : .leading) {
                 Capsule()
                     .fill(isOn ? SettingsColors.accent : Color(hex: "#D0D5EB"))
@@ -189,6 +187,7 @@ struct SettingsToggle: View {
                     .padding(3)
                     .shadow(color: Color.black.opacity(0.1), radius: 1, x: 0, y: 1)
             }
+            .animation(.easeInOut(duration: 0.15), value: isOn)
         }
         .buttonStyle(.plain)
     }

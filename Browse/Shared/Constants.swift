@@ -79,8 +79,8 @@ enum SettingsColors {
     @MainActor static var windowBorder: Color { Color(nsColor: ThemeStore.shared.borderColor) }
     @MainActor static var borderLight: Color  { Color(nsColor: ThemeStore.shared.borderColor) }
     @MainActor static var accent: Color       { Color(nsColor: ThemeStore.shared.accentColor) }
-    @MainActor static var fgPrimary: Color    { Color(nsColor: ThemeStore.shared.foregroundColor) }
-    @MainActor static var fgSecondary: Color  { Color(nsColor: ThemeStore.shared.foregroundColor).opacity(0.7) }
+    @MainActor static var fgPrimary: Color = Color(nsColor: Colors.onSurfacePrimary)
+    @MainActor static var fgSecondary: Color = Color(nsColor: Colors.onSurfaceMuted)
     @MainActor static var hover: Color        { Color(nsColor: ThemeStore.shared.accentColor).opacity(0.12) }
 
     // MARK: - Static (non-themed)

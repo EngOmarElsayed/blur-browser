@@ -16,7 +16,11 @@ final class SettingsWindowController: NSWindowController {
         window.title = "Settings"
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        window.isMovableByWindowBackground = true
+        // Pin the window in place — the title-bar drag and the
+        // background drag both have to be off. `isMovable = false`
+        // alone leaves the title bar draggable.
+        window.isMovable = false
+        window.isMovableByWindowBackground = false
         window.backgroundColor = .clear
         window.isOpaque = false
         window.center()
@@ -45,8 +49,30 @@ final class SettingsWindowController: NSWindowController {
     required init?(coder: NSCoder) { fatalError() }
 
     func showSettings() {
-        window?.center()
+        centerOverActiveBrowserWindow()
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Position the settings window at the true center of the active browser
+    /// window (or the main screen if there's no browser window open).
+    /// `NSWindow.center()` is biased — it places the window at ~1/3 from the
+    /// top of the screen by Apple HIG convention, which looks off-center.
+    private func centerOverActiveBrowserWindow() {
+        guard let window else { return }
+        let windowSize = window.frame.size
+
+        let parentFrame: NSRect = {
+            if let browser = NSApp.windows.first(where: {
+                $0.isVisible && $0.windowController is BrowserWindowController
+            }) {
+                return browser.frame
+            }
+            return NSScreen.main?.visibleFrame ?? .zero
+        }()
+
+        let x = parentFrame.midX - windowSize.width / 2
+        let y = parentFrame.midY - windowSize.height / 2
+        window.setFrameOrigin(NSPoint(x: x, y: y))
     }
 }

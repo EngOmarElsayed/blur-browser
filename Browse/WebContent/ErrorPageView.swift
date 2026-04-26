@@ -16,13 +16,13 @@ struct ErrorPageView: View {
                 // Title
                 Text(error.message.title)
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
+                    .foregroundStyle(Color(nsColor: Colors.surfacePrimary))
                     .multilineTextAlignment(.center)
 
                 // Subtitle
                 Text(error.message.subtitle)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                    .foregroundStyle(Color(nsColor: Colors.onSurfaceMuted))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 360)
 

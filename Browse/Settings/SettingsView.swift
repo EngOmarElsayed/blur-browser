@@ -14,14 +14,8 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            // Window chrome background
             RoundedRectangle(cornerRadius: 11)
                 .fill(SettingsColors.chrome)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 11)
-                        .strokeBorder(SettingsColors.windowBorder, lineWidth: 3.5)
-                )
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 4)
 
             VStack(alignment: .center, spacing: 0) {
                 // Title bar
@@ -34,7 +28,7 @@ struct SettingsView: View {
                 // Content area
                 contentArea
             }
-            .padding(3.5) // Inside the border
+            .padding(8)
         }
         .frame(width: 800, height: 450)
     }
@@ -42,25 +36,29 @@ struct SettingsView: View {
     // MARK: - Title Bar
 
     private var titleBar: some View {
-        ZStack {
-            // Traffic lights
-            HStack(spacing: 8) {
-                TrafficLightButton(color: SettingsColors.trafficRed) {
-                    NSApp.keyWindow?.close()
-                }
-                TrafficLightButton(color: SettingsColors.trafficYellow) {
-                    NSApp.keyWindow?.miniaturize(nil)
-                }
-                TrafficLightButton(color: SettingsColors.trafficGreen) {}
-                    .opacity(0.8)
-                Spacer()
+        HStack(alignment: .center) {
+            Button {
+                NSApp.keyWindow?.close()
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundStyle(Color(nsColor: ThemeStore.shared.foregroundColor))
+                    .padding(.leading, 16)
             }
-            .padding(.leading, 16)
+            .buttonStyle(.plain)
+
+            Spacer()
 
             // Title
             Text("Settings")
                 .font(.custom(Typography.fontFamily, size: 13).weight(.semibold))
-                .foregroundStyle(SettingsColors.fgPrimary)
+                .foregroundStyle(Color(nsColor: ThemeStore.shared.foregroundColor))
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            Spacer()
+
+            Image(systemName: "xmark")
+                .padding(.leading, 16)
+                .opacity(0.0)
         }
         .frame(height: 36)
     }
@@ -77,7 +75,7 @@ struct SettingsView: View {
                 } label: {
                     Text(tab.rawValue)
                         .font(.custom(Typography.fontFamily, size: 12).weight(selectedTab == tab ? .medium : .regular))
-                        .foregroundStyle(selectedTab == tab ? SettingsColors.fgPrimary : SettingsColors.fgSecondary)
+                        .foregroundStyle(selectedTab == tab ? Color(nsColor: Colors.onSurfacePrimary) : SettingsColors.fgSecondary)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 6)
                         .background {
@@ -122,7 +120,7 @@ struct SettingsView: View {
                     AboutSettingsView()
                 }
             }
-            .padding(20)
+            .padding([.horizontal, .top], 20)
         }
     }
 }

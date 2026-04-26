@@ -230,7 +230,7 @@ final class TabManager {
             url = URL(string: "https://\(urlString)")
         } else {
             let encoded = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString
-            url = URL(string: "\(SettingsStore.shared.searchEngine.searchURL)\(encoded)")
+            url = URL(string: "https://www.google.com/search?q=\(encoded)")
         }
 
         if let url {

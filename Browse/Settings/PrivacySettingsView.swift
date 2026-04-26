@@ -21,105 +21,170 @@ struct PrivacySettingsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Cookies section
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Cookies")
-                        .font(.custom(Typography.fontFamily, size: 14).weight(.semibold))
-                        .foregroundStyle(SettingsColors.fgPrimary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Cookies section
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Cookies")
+                            .font(.custom(Typography.fontFamily, size: 14).weight(.semibold))
+                            .foregroundStyle(SettingsColors.fgPrimary)
 
-                    Spacer()
+                        Spacer()
 
-                    // Search field
-                    HStack(spacing: 6) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11))
-                            .foregroundStyle(SettingsColors.fgSecondary)
-                        TextField("Search cookies...", text: $searchText)
-                            .textFieldStyle(.plain)
-                            .font(.custom(Typography.fontFamily, size: 12))
-                    }
-                    .padding(.horizontal, 8)
-                    .frame(width: 200, height: 28)
-                    .background(Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .strokeBorder(SettingsColors.borderLight, lineWidth: 1)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                }
-
-                // Cookie table
-                SettingsTable {
-                    // Header
-                    SettingsTableHeader {
-                        SettingsTableHeaderCell("Domain", flex: 3)
-                        SettingsTableHeaderCell("Name", flex: 2)
-                        SettingsTableHeaderCell("Expires", flex: 2)
+                        // Search field
+                        HStack(spacing: 6) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 11))
+                                .foregroundStyle(SettingsColors.fgSecondary)
+                            TextField("Search cookies...", text: $searchText)
+                                .textFieldStyle(.plain)
+                                .font(.custom(Typography.fontFamily, size: 12))
+                        }
+                        .padding(.horizontal, 8)
+                        .frame(width: 200, height: 28)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .strokeBorder(SettingsColors.borderLight, lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
 
-                    // Rows
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(filteredCookies) { cookie in
-                                SettingsTableRow {
-                                    SettingsTableCell(cookie.domain, flex: 3)
-                                    SettingsTableCell(cookie.name, flex: 2)
-                                    SettingsTableCell(cookieExpiry(cookie), flex: 2)
+                    // Cookie table
+                    SettingsTable {
+                        // Header — leading checkbox toggles select-all on the
+                        // currently-filtered view. When the search field narrows
+                        // the list, the toggle only acts on what's visible.
+                        SettingsTableHeader {
+                            Button {
+                                toggleSelectAll()
+                            } label: {
+                                Image(systemName: selectAllIconName)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(allFilteredSelected ? SettingsColors.accent : SettingsColors.fgSecondary)
+                                    .frame(width: 28, height: 32)
+                            }
+                            .buttonStyle(.plain)
+                            .help(allFilteredSelected ? "Deselect all" : "Select all")
+                            .disabled(filteredCookies.isEmpty)
+
+                            SettingsTableHeaderCell("Domain", flex: 3)
+                            SettingsTableHeaderCell("Name", flex: 2)
+                            SettingsTableHeaderCell("Expires", flex: 2)
+                        }
+
+                        // Rows — entire row is a click target; checkbox is just
+                        // a visual indicator of `selectedCookieIDs` membership.
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(filteredCookies) { cookie in
+                                    let isSelected = selectedCookieIDs.contains(cookie.id)
+                                    Button {
+                                        toggleCookieSelection(cookie)
+                                    } label: {
+                                        SettingsTableRow(
+                                            backgroundColor: isSelected
+                                                ? SettingsColors.accent.opacity(0.12)
+                                                : .white
+                                        ) {
+                                            Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                                                .font(.system(size: 13))
+                                                .foregroundStyle(isSelected ? SettingsColors.accent : SettingsColors.fgSecondary)
+                                                .frame(width: 28)
+                                            SettingsTableCell(cookie.domain, flex: 3)
+                                            SettingsTableCell(cookie.name, flex: 2)
+                                            SettingsTableCell(cookieExpiry(cookie), flex: 2)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         }
                     }
-                }
-                .frame(maxHeight: 160)
+                    .frame(maxHeight: 200)
 
-                // Buttons
-                HStack(spacing: 8) {
-                    SettingsSecondaryButton("Delete Selected") {
-                        showDeleteSelectedConfirm = true
-                    }
-                    .disabled(selectedCookieIDs.isEmpty)
-                    .confirmationDialog("Delete selected cookies?", isPresented: $showDeleteSelectedConfirm) {
-                        Button("Delete", role: .destructive) { deleteSelectedCookies() }
-                    }
+                    // Buttons
+                    HStack(spacing: 8) {
+                        SettingsSecondaryButton("Delete Selected") {
+                            showDeleteSelectedConfirm = true
+                        }
+                        .disabled(selectedCookieIDs.isEmpty)
+                        .confirmationDialog("Delete selected cookies?", isPresented: $showDeleteSelectedConfirm) {
+                            Button("Delete", role: .destructive) { deleteSelectedCookies() }
+                        }
 
-                    SettingsDestructiveButton("Delete All") {
-                        showDeleteAllConfirm = true
-                    }
-                    .confirmationDialog("Delete all cookies?", isPresented: $showDeleteAllConfirm) {
-                        Button("Delete All", role: .destructive) { deleteAllCookies() }
+                        SettingsDestructiveButton("Delete All") {
+                            showDeleteAllConfirm = true
+                        }
+                        .confirmationDialog("Delete all cookies?", isPresented: $showDeleteAllConfirm) {
+                            Button("Delete All", role: .destructive) { deleteAllCookies() }
+                        }
                     }
                 }
+
+                // Data Management section
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Data Management")
+                        .font(.custom(Typography.fontFamily, size: 14).weight(.semibold))
+                        .foregroundStyle(SettingsColors.fgPrimary)
+
+                    HStack(spacing: 8) {
+                        SettingsSecondaryButton("Clear Browsing History") {
+                            showClearHistoryConfirm = true
+                        }
+                        .confirmationDialog("Clear all browsing history?", isPresented: $showClearHistoryConfirm) {
+                            Button("Clear History", role: .destructive) { clearHistory() }
+                        }
+
+                        SettingsSecondaryButton("Clear All Website Data") {
+                            showClearDataConfirm = true
+                        }
+                        .confirmationDialog("Clear all website data?", isPresented: $showClearDataConfirm) {
+                            Button("Clear All Data", role: .destructive) { clearAllWebsiteData() }
+                        }
+                    }
+                }
+
+                Spacer()
             }
-
-            // Data Management section
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Data Management")
-                    .font(.custom(Typography.fontFamily, size: 14).weight(.semibold))
-                    .foregroundStyle(SettingsColors.fgPrimary)
-
-                HStack(spacing: 8) {
-                    SettingsSecondaryButton("Clear Browsing History") {
-                        showClearHistoryConfirm = true
-                    }
-                    .confirmationDialog("Clear all browsing history?", isPresented: $showClearHistoryConfirm) {
-                        Button("Clear History", role: .destructive) { clearHistory() }
-                    }
-
-                    SettingsSecondaryButton("Clear All Website Data") {
-                        showClearDataConfirm = true
-                    }
-                    .confirmationDialog("Clear all website data?", isPresented: $showClearDataConfirm) {
-                        Button("Clear All Data", role: .destructive) { clearAllWebsiteData() }
-                    }
-                }
-            }
-
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .scrollIndicators(.hidden)
         .task { await loadCookies() }
+    }
+
+    // MARK: - Selection helpers
+
+    /// True when every cookie currently visible (after the search filter)
+    /// is in `selectedCookieIDs`. Used to flip the header checkbox state.
+    private var allFilteredSelected: Bool {
+        !filteredCookies.isEmpty && filteredCookies.allSatisfy { selectedCookieIDs.contains($0.id) }
+    }
+
+    /// Three-state header icon: filled when all are selected, partial when
+    /// some are, empty otherwise. macOS's standard tri-state pattern.
+    private var selectAllIconName: String {
+        if allFilteredSelected { return "checkmark.square.fill" }
+        let anySelected = filteredCookies.contains { selectedCookieIDs.contains($0.id) }
+        return anySelected ? "minus.square.fill" : "square"
+    }
+
+    private func toggleSelectAll() {
+        if allFilteredSelected {
+            // All visible are selected → clear selection for the visible set
+            for c in filteredCookies { selectedCookieIDs.remove(c.id) }
+        } else {
+            for c in filteredCookies { selectedCookieIDs.insert(c.id) }
+        }
+    }
+
+    private func toggleCookieSelection(_ cookie: HTTPCookie) {
+        if selectedCookieIDs.contains(cookie.id) {
+            selectedCookieIDs.remove(cookie.id)
+        } else {
+            selectedCookieIDs.insert(cookie.id)
+        }
     }
 
     // MARK: - Helpers
@@ -244,14 +309,20 @@ struct SettingsTableHeaderCell: View {
 }
 
 struct SettingsTableRow<Content: View>: View {
+    let backgroundColor: Color
     @ViewBuilder let content: Content
+
+    init(backgroundColor: Color = .white, @ViewBuilder content: () -> Content) {
+        self.backgroundColor = backgroundColor
+        self.content = content()
+    }
 
     var body: some View {
         HStack(spacing: 0) {
             content
         }
         .frame(height: 32)
-        .background(Color.white)
+        .background(backgroundColor)
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(SettingsColors.borderLight)
