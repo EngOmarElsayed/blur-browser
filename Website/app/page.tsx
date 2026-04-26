@@ -10,10 +10,10 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      <Features />
       <HowItWorks />
       <Performance />
       <WhoItsFor />
-      <Features />
       <Roadmap />
       <FinalCTA />
     </>

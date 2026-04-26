@@ -55,20 +55,21 @@ export async function Hero() {
             Beta · Free & open source forever
           </div>
           <h1 className="max-w-3xl text-4xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-6xl">
-            The browser that{" "}
+            Calm by design.{" "}
             <span className="relative inline-block">
-              <span className="relative z-10">blurs</span>
+              <span className="relative z-10">Safe by default.</span>
               <span
                 className="absolute inset-0 -z-0 translate-y-1 rounded-lg"
                 style={{ background: "rgb(var(--accent) / 0.25)", filter: "blur(8px)" }}
               />
-            </span>{" "}
-            what you don't want to see.
+            </span>
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground/70">
-            Native macOS browser. On-device AI softens adult images and
-            videos in real time as you browse — across social feeds,
-            streaming services, anywhere on the web. Built on WebKit.
+          <p className="mt-6 max-w-3xl text-lg leading-relaxed text-foreground/70">
+            <strong className="font-semibold text-foreground">Calm by design</strong> —
+            vertical tabs, seven themes, ⌘K everywhere, Zen mode.{" "}
+            <strong className="font-semibold text-foreground">Safe by default</strong> —
+            on-device AI that softens adult content automatically. Native
+            macOS, built on WebKit.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">

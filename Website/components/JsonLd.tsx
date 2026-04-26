@@ -29,7 +29,7 @@ export async function JsonLd() {
         applicationSubCategory: "WebBrowser",
         operatingSystem: "macOS 14 and later",
         description:
-          "A native macOS browser. On-device AI softens adult images and videos in real time, on your GPU. Built on WebKit. Free and open source.",
+          "A calm, safer macOS browser. Vertical tabs, seven themes, ⌘K everywhere, Zen mode — with on-device AI that softens adult content automatically. Built on WebKit. Free and open source.",
         url: SITE_URL,
         downloadUrl: `${REPO_URL}/releases/latest`,
         softwareVersion: release.version,
@@ -71,7 +71,7 @@ export async function JsonLd() {
         url: SITE_URL,
         name: "Blur Browser",
         description:
-          "A calmer, safer macOS browser. On-device AI by default. Free and open source.",
+          "A calmer, safer macOS browser. Calm by design, safe by default. Free and open source.",
         publisher: { "@id": `${SITE_URL}/#author` },
         inLanguage: "en",
       },

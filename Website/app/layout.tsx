@@ -9,15 +9,15 @@ import "./globals.css";
 const SITE_URL = "https://blurbrowser.app";
 
 // Kept under 160 characters so Google doesn't truncate it in SERPs.
-// Voice mirrors the home-page hero: native macOS, on-device AI, real time,
-// open source — the four facts a cold visitor needs to decide if it's for them.
+// Voice mirrors the home-page hero: leads with the calm/experience pitch,
+// safety as a quiet "and also" — the new umbrella positioning.
 const DESCRIPTION =
-  "A native macOS browser. On-device AI softens adult images and videos in real time. Free, open source, built on WebKit. No trackers, no telemetry.";
+  "A calm, safer macOS browser. Vertical tabs, seven themes, ⌘K, Zen mode — with on-device AI that softens adult content automatically. Built on WebKit.";
 
 // Slightly longer Twitter/OG description — these surfaces don't truncate as
-// aggressively, so we have room for the "calmer, safer" hook from the brand.
+// aggressively, so we have room for the full umbrella pitch.
 const SOCIAL_DESCRIPTION =
-  "A calmer, safer macOS browser. On-device AI softens adult images and videos in real time, on your GPU — so the web stays as fast as Safari. Free and open source, forever.";
+  "Calm by design. Safe by default. A native macOS browser with vertical tabs, seven themes, ⌘K, and Zen mode — plus on-device AI that softens adult content automatically. Free and open source.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

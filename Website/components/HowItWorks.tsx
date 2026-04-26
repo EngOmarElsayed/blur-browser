@@ -28,7 +28,7 @@ export function HowItWorks() {
       <div className="mx-auto max-w-6xl px-6 py-24">
         <div className="mb-16 max-w-2xl">
           <div className="mb-4 text-xs font-semibold uppercase tracking-widest text-accent">
-            How it works
+            Safe by default
           </div>
           <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             AI that actually watches the screen.
