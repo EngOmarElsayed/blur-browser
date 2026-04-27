@@ -13,7 +13,7 @@ final class PasswordStore {
             .merging([
                 kSecValueData as String: Data(cred.password.utf8),
                 kSecAttrLabel as String: labelPrefix + cred.site,
-                kSecAttrGeneric as String: idMetadata(cred.id),
+                kSecAttrComment as String: cred.id.uuidString,
                 kSecAttrSynchronizable as String: kCFBooleanTrue!,
                 kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
             ]) { current, _ in current }
@@ -109,7 +109,7 @@ final class PasswordStore {
             let password = String(data: data, encoding: .utf8)
         else { return nil }
 
-        let id = decodeId(from: item[kSecAttrGeneric as String] as? Data) ?? UUID()
+        let id = (item[kSecAttrComment as String] as? String).flatMap(UUID.init(uuidString:)) ?? UUID()
         let createdAt = item[kSecAttrCreationDate as String] as? Date ?? .now
         let updatedAt = item[kSecAttrModificationDate as String] as? Date ?? createdAt
 
@@ -123,13 +123,4 @@ final class PasswordStore {
                           createdAt: createdAt, updatedAt: updatedAt)
     }
 
-    private func idMetadata(_ id: UUID) -> Data {
-        try! JSONSerialization.data(withJSONObject: ["id": id.uuidString])
-    }
-
-    private func decodeId(from data: Data?) -> UUID? {
-        guard let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-              let raw = obj["id"], let id = UUID(uuidString: raw) else { return nil }
-        return id
-    }
 }
