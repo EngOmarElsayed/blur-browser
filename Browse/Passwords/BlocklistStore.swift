@@ -2,6 +2,7 @@ import Foundation
 
 /// Tracks sites the user has explicitly opted out of password saving via "Never for this site".
 /// Backed by UserDefaults; site keys are eTLD+1 strings from SiteIdentity.
+@MainActor
 final class BlocklistStore {
     private let defaults: UserDefaults
     private let key = "BrowsePasswordBlocklist"

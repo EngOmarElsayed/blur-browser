@@ -2,11 +2,13 @@ import Foundation
 import Security
 import os
 
+@MainActor
 final class PasswordStore {
     private let log = Logger(subsystem: "com.browse.app", category: "PasswordStore")
     private let labelPrefix = "Browse — "
 
-    func save(_ cred: Credential) {
+    @discardableResult
+    func save(_ cred: Credential) -> Bool {
         let item = baseAttributes(site: cred.site, username: cred.username)
             .merging([
                 kSecValueData as String: Data(cred.password.utf8),
@@ -19,20 +21,23 @@ final class PasswordStore {
         let status = SecItemAdd(item as CFDictionary, nil)
         if status == errSecDuplicateItem {
             // Same site+username already exists; treat save as update.
-            update(site: cred.site, username: cred.username, password: cred.password)
-            return
+            return update(site: cred.site, username: cred.username, password: cred.password)
         }
         if status != errSecSuccess {
             log.error("SecItemAdd failed: \(status, privacy: .public)")
+            return false
         }
+        return true
     }
 
-    func update(id: UUID, password: String) {
-        guard let cred = lookupAll().first(where: { $0.id == id }) else { return }
-        update(site: cred.site, username: cred.username, password: password)
+    @discardableResult
+    func update(id: UUID, password: String) -> Bool {
+        guard let cred = lookupAll().first(where: { $0.id == id }) else { return false }
+        return update(site: cred.site, username: cred.username, password: password)
     }
 
-    private func update(site: String, username: String, password: String) {
+    @discardableResult
+    private func update(site: String, username: String, password: String) -> Bool {
         let query = baseAttributes(site: site, username: username)
         let attributes: [String: Any] = [
             kSecValueData as String: Data(password.utf8),
@@ -40,7 +45,9 @@ final class PasswordStore {
         let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
         if status != errSecSuccess {
             log.error("SecItemUpdate failed: \(status, privacy: .public)")
+            return false
         }
+        return true
     }
 
     func lookup(forSite site: String) -> [Credential] {
@@ -58,13 +65,16 @@ final class PasswordStore {
         return items.compactMap { credential(from: $0) }
     }
 
-    func delete(id: UUID) {
-        guard let cred = lookupAll().first(where: { $0.id == id }) else { return }
+    @discardableResult
+    func delete(id: UUID) -> Bool {
+        guard let cred = lookupAll().first(where: { $0.id == id }) else { return false }
         let query = baseAttributes(site: cred.site, username: cred.username)
         let status = SecItemDelete(query as CFDictionary)
         if status != errSecSuccess && status != errSecItemNotFound {
             log.error("SecItemDelete failed: \(status, privacy: .public)")
+            return false
         }
+        return true   // errSecItemNotFound is treated as a successful delete (already gone)
     }
 
     // MARK: - Private
