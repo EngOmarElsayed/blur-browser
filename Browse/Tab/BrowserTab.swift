@@ -289,6 +289,11 @@ final class BrowserTab: Identifiable {
             config.userContentController.addUserScript(videoScanner)
         }
 
+        // Password manager — documentEnd, all frames
+        if let script = loadPasswordManagerScript() {
+            config.userContentController.addUserScript(script)
+        }
+
         // Register blur:// and blur-image:// scheme handlers for the themed new tab page.
         let blurHandler = BlurSchemeHandler()
         config.setURLSchemeHandler(blurHandler, forURLScheme: "blur")
@@ -309,6 +314,18 @@ final class BrowserTab: Identifiable {
             ? NSAppearance(named: .darkAqua)
             : NSAppearance(named: .aqua)
     }
+}
+
+/// Loads `passwordManager.js` from the app bundle as a `WKUserScript` injected
+/// at `documentEnd` in all frames. Returns nil if the file isn't bundled.
+func loadPasswordManagerScript() -> WKUserScript? {
+    guard let url = Bundle.main.url(forResource: "passwordManager", withExtension: "js"),
+          let source = try? String(contentsOf: url, encoding: .utf8) else {
+        return nil
+    }
+    return WKUserScript(source: source,
+                        injectionTime: .atDocumentEnd,
+                        forMainFrameOnly: false)
 }
 
 extension BrowserTab: @preconcurrency Hashable {

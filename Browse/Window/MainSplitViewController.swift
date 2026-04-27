@@ -8,6 +8,8 @@ final class MainSplitViewController: NSViewController {
     let historyStore: HistoryStore
     let downloadStore: DownloadStore
     let downloadManager: DownloadManager
+    let passwordStore: PasswordStore
+    let blocklistStore: BlocklistStore
     let webViewController: WebViewController
     let addressBar: AddressBarViewController
 
@@ -52,13 +54,21 @@ final class MainSplitViewController: NSViewController {
         tabManager: TabManager,
         historyStore: HistoryStore,
         downloadStore: DownloadStore,
-        downloadManager: DownloadManager
+        downloadManager: DownloadManager,
+        passwordStore: PasswordStore,
+        blocklistStore: BlocklistStore
     ) {
         self.tabManager = tabManager
         self.historyStore = historyStore
         self.downloadStore = downloadStore
         self.downloadManager = downloadManager
-        self.webViewController = WebViewController(tabManager: tabManager)
+        self.passwordStore = passwordStore
+        self.blocklistStore = blocklistStore
+        self.webViewController = WebViewController(
+            tabManager: tabManager,
+            passwordStore: passwordStore,
+            blocklistStore: blocklistStore
+        )
         self.addressBar = AddressBarViewController(tabManager: tabManager)
         super.init(nibName: nil, bundle: nil)
     }

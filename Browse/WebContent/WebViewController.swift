@@ -7,6 +7,9 @@ final class WebViewController: NSViewController {
 
     private let tabManager: TabManager
     private let coordinator = WebViewCoordinator()
+    private let passwordStore: PasswordStore
+    private let blocklistStore: BlocklistStore
+    private(set) var passwordCoordinator: PasswordManagerCoordinator?
     private var currentWebView: WKWebView?
     private var findBar: FindInPageBar?
     private var findController: FindInPageController?
@@ -19,10 +22,19 @@ final class WebViewController: NSViewController {
     /// Called when a finished page has been checked for reader-mode availability.
     var onReaderAvailabilityChanged: ((Bool) -> Void)?
 
-    init(tabManager: TabManager) {
+    init(tabManager: TabManager,
+         passwordStore: PasswordStore,
+         blocklistStore: BlocklistStore) {
         self.tabManager = tabManager
+        self.passwordStore = passwordStore
+        self.blocklistStore = blocklistStore
         super.init(nibName: nil, bundle: nil)
         coordinator.viewController = self
+        let pmCoordinator = PasswordManagerCoordinator(
+            passwordStore: passwordStore,
+            blocklistStore: blocklistStore
+        )
+        self.passwordCoordinator = pmCoordinator
     }
 
     @available(*, unavailable)
@@ -78,6 +90,7 @@ final class WebViewController: NSViewController {
         if let oldWV = currentWebView {
             oldWV.evaluateJavaScript("if (document.fullscreenElement) { document.exitFullscreen(); }")
             coordinator.unregisterMessageHandlers(on: oldWV)
+            oldWV.configuration.userContentController.removeScriptMessageHandler(forName: "passwordManager")
         }
 
         // Remove old web view
@@ -96,6 +109,12 @@ final class WebViewController: NSViewController {
         // Register content filter message handlers
         coordinator.resetFilterState()
         coordinator.registerMessageHandlers(on: wv)
+
+        // Register password manager message handler for the active tab.
+        if let pmCoordinator = passwordCoordinator {
+            wv.configuration.userContentController.add(pmCoordinator, name: "passwordManager")
+            pmCoordinator.webView = wv
+        }
 
         wv.translatesAutoresizingMaskIntoConstraints = true
         view.addSubview(wv)

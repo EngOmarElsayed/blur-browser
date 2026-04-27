@@ -8,6 +8,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     let tabManager = TabManager()
     let historyStore = HistoryStore()
     let downloadStore = DownloadStore()
+    let passwordStore = PasswordStore()
+    let blocklistStore = BlocklistStore()
     private(set) var downloadManager: DownloadManager!
 
     private var splitVC: MainSplitViewController!
@@ -51,7 +53,9 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
             tabManager: tabManager,
             historyStore: historyStore,
             downloadStore: downloadStore,
-            downloadManager: downloadManager
+            downloadManager: downloadManager,
+            passwordStore: passwordStore,
+            blocklistStore: blocklistStore
         )
         splitVC.webViewController.onNewTabRequested = { [weak self] url in
             self?.tabManager.addNewTab(url: url)
