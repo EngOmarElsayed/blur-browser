@@ -35,12 +35,18 @@ final class WebViewController: NSViewController {
             blocklistStore: blocklistStore
         )
         self.passwordCoordinator = pmCoordinator
+        observePasswordCoordinator()
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
     private let cornerMaskView = CornerMaskView()
+
+    /// Top-left overlay for the password Save/Update prompt. Mirrors the
+    /// coordinator's `pendingSaveCredential` via a 50ms polling Task (same
+    /// pattern as BrowserWindowController's tab-selection observer).
+    private let savePromptOverlay = SavePromptOverlay()
 
     /// Native wallpaper overlay shown on top of the web view whenever the current
     /// tab is on `AppConstants.newTabURL`. Replaces the old blur://newtab HTML path.
@@ -82,6 +88,12 @@ final class WebViewController: NSViewController {
         // Reset reader availability for the new tab (we'll re-check on navigation finish)
         onReaderAvailabilityChanged?(false)
 
+        // A tab swap invalidates any pending save prompt — it was tied to the
+        // previous tab's site and submission.
+        if currentWebView !== tab?.webView {
+            passwordCoordinator?.dismissPending()
+        }
+
         // Clear any error page from previous tab
         errorPageHosting?.view.removeFromSuperview()
         errorPageHosting = nil
@@ -99,8 +111,10 @@ final class WebViewController: NSViewController {
 
         guard let tab else {
             currentWebView = nil
+            passwordCoordinator?.isTabActive = false
             return
         }
+        passwordCoordinator?.isTabActive = true
 
         let wv = tab.webView
         wv.navigationDelegate = coordinator
@@ -128,6 +142,13 @@ final class WebViewController: NSViewController {
         // Corner mask on top of web view to fake rounded corners
         cornerMaskView.removeFromSuperview()
         view.addSubview(cornerMaskView)
+
+        // Save-password prompt overlay — top-left of the web content area.
+        // Hit-tests through to the web view except inside the prompt itself.
+        savePromptOverlay.frame = view.bounds
+        savePromptOverlay.autoresizingMask = [.width, .height]
+        savePromptOverlay.removeFromSuperview()
+        view.addSubview(savePromptOverlay, positioned: .above, relativeTo: nil)
 
         layoutCurrentWebView()
 
@@ -175,6 +196,13 @@ final class WebViewController: NSViewController {
         }
         cornerMaskView.removeFromSuperview()
         view.addSubview(cornerMaskView)
+
+        // Keep the save-password overlay above the corner mask.
+        if savePromptOverlay.superview === view {
+            savePromptOverlay.frame = view.bounds
+            savePromptOverlay.removeFromSuperview()
+            view.addSubview(savePromptOverlay)
+        }
     }
 
     // MARK: - New Tab Wallpaper Overlay
@@ -620,6 +648,57 @@ final class WebViewController: NSViewController {
 
     func findNext() { findController?.findNext() }
     func findPrevious() { findController?.findPrevious() }
+
+    // MARK: - Save-Password Prompt Observation
+
+    private func observePasswordCoordinator() {
+        guard let coordinator = passwordCoordinator else { return }
+        Task { @MainActor [weak self] in
+            var last: PasswordManagerCoordinator.PendingCredential? = nil
+            while !Task.isCancelled {
+                guard let self else { return }
+                let current = coordinator.pendingSaveCredential
+                if current != last {
+                    self.applyPendingSaveCredential(current)
+                    last = current
+                }
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+        }
+    }
+
+    private func applyPendingSaveCredential(_ pending: PasswordManagerCoordinator.PendingCredential?) {
+        guard let pending else { savePromptOverlay.hide(); return }
+        guard let coordinator = passwordCoordinator else { return }
+
+        let promptView: SavePromptView
+        let mode: SavePromptView.Mode
+        switch pending {
+        case let .save(site, username, password):
+            mode = .save
+            promptView = SavePromptView(
+                mode: .save, site: site,
+                username: username, password: password,
+                onSubmit: { [weak coordinator] u, p in
+                    coordinator?.acceptPending(editedUsername: u, editedPassword: p)
+                },
+                onNever: { [weak coordinator] in coordinator?.declineForever() },
+                onClose: { [weak coordinator] in coordinator?.dismissPending() }
+            )
+        case let .update(site, username, password, _):
+            mode = .update
+            promptView = SavePromptView(
+                mode: .update, site: site,
+                username: username, password: password,
+                onSubmit: { [weak coordinator] u, p in
+                    coordinator?.acceptPending(editedUsername: u, editedPassword: p)
+                },
+                onNever: { [weak coordinator] in coordinator?.declineForever() },
+                onClose: { [weak coordinator] in coordinator?.dismissPending() }
+            )
+        }
+        savePromptOverlay.show(view: promptView, mode: mode)
+    }
 
     private func layoutFindBar() {
         guard let fb = findBar else { return }
