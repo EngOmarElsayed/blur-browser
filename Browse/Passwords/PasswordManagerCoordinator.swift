@@ -28,11 +28,18 @@ final class PasswordManagerCoordinator: NSObject {
     private let blocklistStore: BlocklistStore
     weak var webView: WKWebView?
 
-    /// unitId -> (classification, username, password) snapshotted at submission time.
-    /// Read at loginLikelySucceeded; cleared at scriptReady (page reload) and loginInconclusive.
-    private var lastSubmissionByUnit: [String: (classification: FormClassification,
-                                                username: String,
-                                                password: String)] = [:]
+    /// unitId -> snapshot. Includes the URL captured at submission time so the
+    /// native side can detect navigation-based success even when the JS-side
+    /// `loginLikelySucceeded` message gets dropped during frame unload.
+    private struct PendingSubmission {
+        let classification: FormClassification
+        let username: String
+        let password: String
+        let capturedURL: URL?
+        let capturedAt: Date
+    }
+    private var lastSubmissionByUnit: [String: PendingSubmission] = [:]
+    private let submissionTTL: TimeInterval = 10
 
     private var saveDeadline: Date?
     private var savePauseTime: Date?
@@ -59,17 +66,52 @@ final class PasswordManagerCoordinator: NSObject {
     private func handle(_ msg: InboundMessage) {
         switch msg {
         case .scriptReady:
-            lastSubmissionByUnit.removeAll()
+            // Don't wipe the map — cross-origin iframe scriptReadys (Stripe, analytics, etc.)
+            // would clobber a real main-frame submission. Instead, evict only stale entries
+            // and check whether the main webView has navigated since a recent submission.
+            evictStaleSubmissions()
+            checkForNavigationSuccess()
         case .formsDetected:
             break // Used in Round 5 (autofill).
         case .fieldFocused, .fieldBlurred, .viewportChanged:
             break // Used in Round 5 (autofill).
         case let .formSubmitted(unitId, classification, username, password):
-            lastSubmissionByUnit[unitId] = (classification, username, password)
+            lastSubmissionByUnit[unitId] = PendingSubmission(
+                classification: classification,
+                username: username,
+                password: password,
+                capturedURL: webView?.url,
+                capturedAt: Date()
+            )
         case .loginLikelySucceeded(let unitId):
             handleSuccess(unitId: unitId)
         case .loginInconclusive(let unitId):
             lastSubmissionByUnit.removeValue(forKey: unitId)
+        }
+    }
+
+    /// Drop submissions older than `submissionTTL`. Prevents unbounded growth on long-lived tabs.
+    private func evictStaleSubmissions() {
+        let now = Date()
+        let staleKeys = lastSubmissionByUnit.compactMap { (key, entry) in
+            now.timeIntervalSince(entry.capturedAt) > submissionTTL ? key : nil
+        }
+        for key in staleKeys { lastSubmissionByUnit.removeValue(forKey: key) }
+    }
+
+    /// Native-side success detector. Called on scriptReady. If a recent submission's
+    /// captured URL has a different host or path than the current webView URL, treat
+    /// it as a successful login (the user navigated away from the form).
+    /// This is the safety net for the common case where the JS-side
+    /// `loginLikelySucceeded` was dropped during frame unload.
+    private func checkForNavigationSuccess() {
+        guard let currentURL = webView?.url else { return }
+        for (unitId, entry) in lastSubmissionByUnit {
+            guard let captured = entry.capturedURL else { continue }
+            if currentURL.host != captured.host || currentURL.path != captured.path {
+                handleSuccess(unitId: unitId)
+                // handleSuccess removes the entry; loop will keep going for any others.
+            }
         }
     }
 
