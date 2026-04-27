@@ -45,14 +45,14 @@ const features: FeatureCard[] = [
     screenshot: "/funny-error.png",
   },
   {
+    title: "Privacy with receipts",
+    body: "Real numbers, not promises. See exactly which trackers Blur blocked for you, broken down by site and source.",
+    screenshot: "/privacy-report.png",
+  },
+  {
     title: "Built on WebKit",
     body: "The same engine that powers Safari. Fast to load, gentle on your battery, honest to web standards.",
     icon: "⚡",
-  },
-  {
-    title: "Private & secure",
-    body: "No tracking, no telemetry, no ad networks watching your every move. Your browsing history stays on your Mac, where it belongs.",
-    icon: "🔒",
   },
 ];
 
