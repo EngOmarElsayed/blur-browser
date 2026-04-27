@@ -39,6 +39,12 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         // Restore pinned tabs from SwiftData (always, after JSON restore so they aren't wiped)
         tabManager.restorePinnedTabs()
 
+        // Privacy Report needs HistoryStore to compute the % of visited
+        // sites that contacted trackers. Single shared instance — set once
+        // per window-controller setup, idempotent.
+        PrivacyReportStore.shared.setHistoryStore(historyStore)
+        Task { await PrivacyReportStore.shared.refresh() }
+
         downloadManager = DownloadManager(store: downloadStore)
 
         splitVC = MainSplitViewController(

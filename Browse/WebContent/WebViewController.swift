@@ -34,6 +34,15 @@ final class WebViewController: NSViewController {
     /// tab is on `AppConstants.newTabURL`. Replaces the old blur://newtab HTML path.
     private let wallpaperView = NewTabWallpaperView()
 
+    /// SwiftUI Privacy Report widget shown above the wallpaper on the new
+    /// tab page. Same show/hide rules as `wallpaperView` — visible only when
+    /// the active tab is on the new-tab URL.
+    private lazy var privacyReportHostingView: NSHostingView<PrivacyReportView> = {
+        let host = NSHostingView(rootView: PrivacyReportView())
+        host.translatesAutoresizingMaskIntoConstraints = true
+        return host
+    }()
+
     override func loadView() {
         view = NSView()
         view.wantsLayer = true
@@ -134,11 +143,16 @@ final class WebViewController: NSViewController {
         // Keep error page (if any) sized to fill the content area
         errorPageHosting?.view.frame = view.bounds
         wallpaperView.frame = view.bounds
-        // Re-assert z-order: [wkwebview] < [wallpaper] < [cornerMask] < [quickSearchOverlay]
+        privacyReportHostingView.frame = view.bounds
+        // Re-assert z-order: [wkwebview] < [wallpaper] < [privacyReport] < [cornerMask] < [quickSearchOverlay]
         // addSubview without a positioning arg moves the subview to the top.
         if wallpaperView.superview === view {
             wallpaperView.removeFromSuperview()
             view.addSubview(wallpaperView)
+        }
+        if privacyReportHostingView.superview === view {
+            privacyReportHostingView.removeFromSuperview()
+            view.addSubview(privacyReportHostingView)
         }
         cornerMaskView.removeFromSuperview()
         view.addSubview(cornerMaskView)
@@ -151,6 +165,7 @@ final class WebViewController: NSViewController {
     private func updateNewTabWallpaper(for tab: BrowserTab?) {
         guard let tab, tab.url == AppConstants.newTabURL else {
             wallpaperView.removeFromSuperview()
+            privacyReportHostingView.removeFromSuperview()
             return
         }
         wallpaperView.setWallpaper(named: tab.newTabWallpaperName)
@@ -159,6 +174,16 @@ final class WebViewController: NSViewController {
         if wallpaperView.superview !== view {
             view.addSubview(wallpaperView)
         }
+
+        // Privacy report overlay sits above wallpaper, below cornerMask.
+        privacyReportHostingView.frame = view.bounds
+        privacyReportHostingView.autoresizingMask = [.width, .height]
+        if privacyReportHostingView.superview !== view {
+            view.addSubview(privacyReportHostingView, positioned: .above, relativeTo: wallpaperView)
+        }
+        // Refresh the snapshot whenever the new-tab page shows. Cheap — the
+        // SPI returns instantly from in-process WebKit cache.
+        Task { await PrivacyReportStore.shared.refresh() }
     }
 
     /// Called by the polling loop when the selected tab's URL changes (e.g.

@@ -69,6 +69,25 @@ final class HistoryStore {
         }
     }
 
+    /// Distinct hosts visited since `date`, lowercased. Used by the privacy
+    /// report widget — combined with ITP records to compute the "% of sites
+    /// that contacted trackers" denominator.
+    func distinctHosts(since date: Date) -> Set<String> {
+        guard let ctx = modelContext else { return [] }
+        let descriptor = FetchDescriptor<HistoryEntry>(
+            predicate: #Predicate { $0.timestamp >= date }
+        )
+        let recentEntries = (try? ctx.fetch(descriptor)) ?? []
+        return Set(recentEntries.compactMap { entry -> String? in
+            URL(string: entry.url)?.host?.lowercased()
+        })
+    }
+
+    /// Convenience over `distinctHosts(since:)` — number of unique hosts.
+    func distinctHostsCount(since date: Date) -> Int {
+        distinctHosts(since: date).count
+    }
+
     private func fetchEntries() {
         guard let ctx = modelContext else { return }
         var descriptor = FetchDescriptor<HistoryEntry>(
