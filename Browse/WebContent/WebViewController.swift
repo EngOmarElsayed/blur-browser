@@ -36,6 +36,13 @@ final class WebViewController: NSViewController {
         )
         self.passwordCoordinator = pmCoordinator
         observePasswordCoordinator()
+
+        pmCoordinator.onAutofillPresent = { [weak self] rectInDoc, creds, form, _ in
+            self?.presentAutofill(rectInDoc: rectInDoc, credentials: creds, form: form)
+        }
+        pmCoordinator.onAutofillDismiss = { [weak self] in
+            self?.autofillPanel.hide()
+        }
     }
 
     @available(*, unavailable)
@@ -47,6 +54,11 @@ final class WebViewController: NSViewController {
     /// coordinator's `pendingSaveCredential` via a 50ms polling Task (same
     /// pattern as BrowserWindowController's tab-selection observer).
     private let savePromptOverlay = SavePromptOverlay()
+
+    /// Autofill credentials popover. Anchored just below the focused login
+    /// field; shown by `presentAutofill(rectInDoc:credentials:form:)` and
+    /// hidden on blur, scroll, click-outside, tab switch, or window deactivate.
+    private let autofillPanel = AutofillPopoverPanel()
 
     /// Native wallpaper overlay shown on top of the web view whenever the current
     /// tab is on `AppConstants.newTabURL`. Replaces the old blur://newtab HTML path.
@@ -92,6 +104,7 @@ final class WebViewController: NSViewController {
         // previous tab's site and submission.
         if currentWebView !== tab?.webView {
             passwordCoordinator?.dismissPending()
+            autofillPanel.hide()
         }
 
         // Clear any error page from previous tab
@@ -698,6 +711,43 @@ final class WebViewController: NSViewController {
             )
         }
         savePromptOverlay.show(view: promptView, mode: mode)
+    }
+
+    // MARK: - Autofill Popover
+
+    private func presentAutofill(rectInDoc: CGRect, credentials: [Credential], form: DetectedForm) {
+        guard let webView = currentWebView, let window = webView.window else {
+            autofillPanel.hide()
+            return
+        }
+        // 1. CSS px (top-doc, viewport-relative) -> AppKit webView coords.
+        //    Y-axis flip: web docs grow down, AppKit grows up.
+        let webViewRect = NSRect(
+            x: rectInDoc.minX,
+            y: webView.bounds.height - rectInDoc.maxY,
+            width: rectInDoc.width,
+            height: rectInDoc.height
+        )
+        // 2. webView coords -> window coords.
+        let windowRect = webView.convert(webViewRect, to: nil)
+        // 3. window coords -> screen coords.
+        let screenRect = window.convertToScreen(windowRect)
+        autofillPanel.show(below: screenRect, in: window, credentials: credentials) { [weak self] cred in
+            self?.fillCredential(cred, into: form)
+        }
+    }
+
+    private func fillCredential(_ cred: Credential, into form: DetectedForm) {
+        guard let webView = currentWebView else { return }
+        let payload: [String: Any] = [
+            "usernameFieldId": form.usernameFieldId ?? "",
+            "username": cred.username,
+            "passwordFieldId": form.passwordFieldId,
+            "password": cred.password,
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("__BrowsePasswordManager.fillCredential(\(json))")
     }
 
     private func layoutFindBar() {

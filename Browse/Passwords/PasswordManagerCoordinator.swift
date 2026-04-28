@@ -41,6 +41,18 @@ final class PasswordManagerCoordinator: NSObject {
     private var lastSubmissionByUnit: [String: PendingSubmission] = [:]
     private let submissionTTL: TimeInterval = 10
 
+    /// Last `formsDetected` payload from the JS side. Used by the autofill flow
+    /// to look up which `DetectedForm` a freshly-focused field belongs to.
+    private var lastDetectedForms: [DetectedForm] = []
+
+    /// Called when the autofill popover should appear. The rect is in CSS px,
+    /// top-document viewport coords. WebViewController translates the rect to
+    /// screen coordinates and shows the panel.
+    var onAutofillPresent: ((CGRect, [Credential], DetectedForm, FieldRole) -> Void)?
+
+    /// Called when the autofill popover should hide.
+    var onAutofillDismiss: (() -> Void)?
+
     private var saveDeadline: Date?
     private var savePauseTime: Date?
     private var saveTimer: Task<Void, Never>?
@@ -71,10 +83,14 @@ final class PasswordManagerCoordinator: NSObject {
             // and check whether the main webView has navigated since a recent submission.
             evictStaleSubmissions()
             checkForNavigationSuccess()
-        case .formsDetected:
-            break // Used in Round 5 (autofill).
-        case .fieldFocused, .fieldBlurred, .viewportChanged:
-            break // Used in Round 5 (autofill).
+        case .formsDetected(_, let forms):
+            self.lastDetectedForms = forms
+        case let .fieldFocused(unitId, fieldId, role, rect):
+            presentAutofillIfPossible(unitId: unitId, fieldId: fieldId, role: role, rectInDoc: rect.cgRect)
+        case .fieldBlurred:
+            onAutofillDismiss?()
+        case .viewportChanged:
+            onAutofillDismiss?()
         case let .formSubmitted(unitId, classification, username, password):
             lastSubmissionByUnit[unitId] = PendingSubmission(
                 classification: classification,
@@ -179,6 +195,29 @@ final class PasswordManagerCoordinator: NSObject {
 
     func dismissPending() {
         setPendingSaveCredential(nil)
+    }
+
+    // MARK: - Autofill
+
+    private func presentAutofillIfPossible(unitId: String, fieldId: String,
+                                           role: FieldRole, rectInDoc: CGRect) {
+        // Only attach to fields we recognize.
+        guard role == .username || role == .password else { return }
+        // Only on https-eligible sites.
+        guard let url = webView?.url, let site = SiteIdentity.key(for: url) else {
+            onAutofillDismiss?()
+            return
+        }
+        let credentials = passwordStore.lookup(forSite: site)
+        guard !credentials.isEmpty else {
+            onAutofillDismiss?()
+            return
+        }
+        guard let form = lastDetectedForms.first(where: { $0.unitId == unitId }) else {
+            onAutofillDismiss?()
+            return
+        }
+        onAutofillPresent?(rectInDoc, credentials, form, role)
     }
 
     // MARK: - Timer
