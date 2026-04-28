@@ -129,7 +129,32 @@
     }
 
     post({ kind: 'formsDetected', site: location.hostname, forms });
+
+    // If a freshly-tagged field is already focused (browser auto-focus from
+    // page load fired before scan tagged the field, so fieldInfo returned null
+    // at that time), announce it now so native can show the autofill popover.
+    // Dedupe via lastAnnouncedFocusFieldId so re-scans triggered by DOM
+    // mutations after autofill don't re-announce the same focus and re-show
+    // the popover we just dismissed.
+    const active = document.activeElement;
+    if (active instanceof HTMLInputElement) {
+      const info = fieldInfo(active);
+      if (info && info.fieldId !== lastAnnouncedFocusFieldId) {
+        lastAnnouncedFocusFieldId = info.fieldId;
+        post({
+          kind: 'fieldFocused',
+          unitId: info.unitId,
+          fieldId: info.fieldId,
+          role: info.role,
+          rect: rectInTopDoc(active),
+        });
+      }
+    }
   };
+
+  // Tracks the most recently announced focused fieldId so we don't redundantly
+  // announce focus on every MutationObserver-triggered scan.
+  let lastAnnouncedFocusFieldId = null;
 
   let scanTimer = null;
   const scheduleScan = () => {
@@ -160,6 +185,7 @@
     if (!(target instanceof HTMLInputElement)) return;
     const info = fieldInfo(target);
     if (!info) return;
+    lastAnnouncedFocusFieldId = info.fieldId;
     post({
       kind: 'fieldFocused',
       unitId: info.unitId,
@@ -174,6 +200,9 @@
     if (!(target instanceof HTMLInputElement)) return;
     const info = fieldInfo(target);
     if (!info) return;
+    if (lastAnnouncedFocusFieldId === info.fieldId) {
+      lastAnnouncedFocusFieldId = null;
+    }
     post({ kind: 'fieldBlurred', fieldId: info.fieldId });
   }, true);
 

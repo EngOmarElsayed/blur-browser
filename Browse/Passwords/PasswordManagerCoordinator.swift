@@ -201,9 +201,7 @@ final class PasswordManagerCoordinator: NSObject {
 
     private func presentAutofillIfPossible(unitId: String, fieldId: String,
                                            role: FieldRole, rectInDoc: CGRect) {
-        // Only attach to fields we recognize.
         guard role == .username || role == .password else { return }
-        // Only on https-eligible sites.
         guard let url = webView?.url, let site = SiteIdentity.key(for: url) else {
             onAutofillDismiss?()
             return

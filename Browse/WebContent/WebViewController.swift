@@ -1,4 +1,5 @@
 import AppKit
+import LocalAuthentication
 import SwiftUI
 import WebKit
 
@@ -739,15 +740,28 @@ final class WebViewController: NSViewController {
 
     private func fillCredential(_ cred: Credential, into form: DetectedForm) {
         guard let webView = currentWebView else { return }
-        let payload: [String: Any] = [
-            "usernameFieldId": form.usernameFieldId ?? "",
-            "username": cred.username,
-            "passwordFieldId": form.passwordFieldId,
-            "password": cred.password,
-        ]
-        guard let data = try? JSONSerialization.data(withJSONObject: payload),
-              let json = String(data: data, encoding: .utf8) else { return }
-        webView.evaluateJavaScript("__BrowsePasswordManager.fillCredential(\(json))")
+        // Require local authentication (Touch ID / Apple Watch / Mac password)
+        // before filling. Cancel/fail = silent no-op; the popover is already hidden.
+        Task { @MainActor in
+            let context = LAContext()
+            let reason = "Fill saved password for \(cred.site)"
+            let ok: Bool
+            do {
+                ok = try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
+            } catch {
+                ok = false
+            }
+            guard ok else { return }
+            let payload: [String: Any] = [
+                "usernameFieldId": form.usernameFieldId ?? "",
+                "username": cred.username,
+                "passwordFieldId": form.passwordFieldId,
+                "password": cred.password,
+            ]
+            guard let data = try? JSONSerialization.data(withJSONObject: payload),
+                  let json = String(data: data, encoding: .utf8) else { return }
+            _ = try? await webView.evaluateJavaScript("__BrowsePasswordManager.fillCredential(\(json))")
+        }
     }
 
     private func layoutFindBar() {

@@ -74,8 +74,10 @@ final class AutofillPopoverPanel {
                 set: { [weak self] in self?.setSelectedIndexInternal($0) }
             ),
             onSelect: { [weak self] cred in
+                // Capture the callback BEFORE hide() — hide() sets self.onSelect = nil.
+                let cb = self?.onSelect
                 self?.hide()
-                self?.onSelect?(cred)
+                cb?(cred)
             }
         )
         if let existing = hosting {
@@ -119,8 +121,10 @@ final class AutofillPopoverPanel {
             case 36, 76: // return / numpad enter
                 if self.credentials.indices.contains(self.selectedIndex) {
                     let cred = self.credentials[self.selectedIndex]
+                    // Capture the callback BEFORE hide() — hide() sets self.onSelect = nil.
+                    let cb = self.onSelect
                     self.hide()
-                    self.onSelect?(cred)
+                    cb?(cred)
                 }
                 return nil
             case 53: // escape
