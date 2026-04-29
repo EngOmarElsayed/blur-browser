@@ -27,7 +27,7 @@ struct AutofillPopoverView: View {
             }
         }
         .frame(width: 280)
-        .frame(maxHeight: 240)
+        .frame(maxHeight: 280)
         .background(Color(nsColor: Colors.surfacePrimary))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
@@ -50,11 +50,22 @@ struct AutofillPopoverView: View {
                 Text(cred.username)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color(nsColor: Colors.onSurfacePrimary))
+                    .lineLimit(1)
+
                 Text(cred.site)
                     .font(.system(size: 11))
                     .foregroundStyle(Color(nsColor: Colors.onSurfaceSecondary))
             }
+
             Spacer()
+
+            if isSelected {
+                Image(systemName: "touchid")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundStyle(Color(nsColor: Colors.accentPrimary))
+                    .frame(width: 20, height: 20)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

@@ -721,17 +721,16 @@ final class WebViewController: NSViewController {
             autofillPanel.hide()
             return
         }
-        // 1. CSS px (top-doc, viewport-relative) -> AppKit webView coords.
-        //    Y-axis flip: web docs grow down, AppKit grows up.
+        // WKWebView is a flipped view (Y-down, matching CSS), so CSS rects can be
+        // passed directly into its coord space. webView.convert handles the flip
+        // to the window's standard (Y-up) coords for us.
         let webViewRect = NSRect(
             x: rectInDoc.minX,
-            y: webView.bounds.height - rectInDoc.maxY,
+            y: rectInDoc.minY,
             width: rectInDoc.width,
             height: rectInDoc.height
         )
-        // 2. webView coords -> window coords.
         let windowRect = webView.convert(webViewRect, to: nil)
-        // 3. window coords -> screen coords.
         let screenRect = window.convertToScreen(windowRect)
         autofillPanel.show(below: screenRect, in: window, credentials: credentials) { [weak self] cred in
             self?.fillCredential(cred, into: form)
@@ -755,7 +754,7 @@ final class WebViewController: NSViewController {
             let payload: [String: Any] = [
                 "usernameFieldId": form.usernameFieldId ?? "",
                 "username": cred.username,
-                "passwordFieldId": form.passwordFieldId,
+                "passwordFieldId": form.passwordFieldId ?? "",
                 "password": cred.password,
             ]
             guard let data = try? JSONSerialization.data(withJSONObject: payload),

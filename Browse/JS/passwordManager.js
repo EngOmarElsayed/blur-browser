@@ -128,6 +128,34 @@
       });
     }
 
+    // Standalone username/email detection for multi-step login flows
+    // (Google's identifier step, Apple's "Email" step, Microsoft's account step)
+    // where the password field lives on a separate document. Without this, the
+    // autofill popover never appears on step 1 because no form was detected.
+    const alreadyTagged = new Set();
+    for (const rec of detected.values()) {
+      if (rec.usernameField) alreadyTagged.add(rec.usernameField);
+    }
+    const standalones = document.querySelectorAll(
+      'input[autocomplete~="username"], input[autocomplete~="email"], input[type="email"]'
+    );
+    for (const un of standalones) {
+      if (alreadyTagged.has(un)) continue;
+      if (!isVisible(un)) continue;
+      const unit = un.closest('form') || un.parentElement || document.body;
+      const unitId = idFor(unit, UNIT_ID_ATTR);
+      if (detected.has(unitId)) continue; // already a real form unit here
+      const fieldId = idFor(un, FIELD_ID_ATTR);
+      detected.set(unitId, { unit, classification: 'login', usernameField: un, passwordField: null });
+      forms.push({
+        unitId, classification: 'login',
+        usernameFieldId: fieldId,
+        passwordFieldId: null,
+        usernameRect: rectInTopDoc(un),
+        passwordRect: null,
+      });
+    }
+
     post({ kind: 'formsDetected', site: location.hostname, forms });
 
     // If a freshly-tagged field is already focused (browser auto-focus from
@@ -219,22 +247,65 @@
 
   // --- Submission tracking + success watcher ---
 
-  const SUBMIT_BUTTON_RE = /log\s*in|sign\s*in|continue|submit|sign\s*up|register|create.*account|update.*password|change.*password/i;
+  const SUBMIT_BUTTON_RE = /log\s*in|sign\s*in|continue|next|submit|sign\s*up|register|create.*account|update.*password|change.*password|verify|^ok$/i;
+
+  const isSubmitLikeButton = (button) => {
+    if (!button) return false;
+    if (button.tagName === 'BUTTON' && (button.type === 'submit' || !button.type)) return true;
+    if (button.tagName === 'INPUT' && button.type === 'submit') return true;
+    const label = (button.textContent || '') + ' ' + (button.getAttribute('aria-label') || '');
+    return SUBMIT_BUTTON_RE.test(label);
+  };
 
   const isSubmitButton = (el, unit) => {
     if (!el) return false;
-    if (el.tagName === 'BUTTON' && (el.type === 'submit' || !el.type)) return unit.contains(el);
-    if (el.tagName === 'INPUT' && el.type === 'submit') return unit.contains(el);
-    if (unit.contains(el) && (el.tagName === 'BUTTON' || el.getAttribute('role') === 'button')) {
-      return SUBMIT_BUTTON_RE.test(el.textContent || '');
-    }
-    return false;
+    // Clicks often hit inner spans/svgs/icons. Walk up to the nearest button-like
+    // ancestor before classifying.
+    const button = (el.closest && el.closest('button, [role="button"], input[type="submit"]')) || null;
+    if (!button) return false;
+    if (!isSubmitLikeButton(button)) return false;
+    // Strict association: button is inside the unit's DOM tree OR linked via the
+    // HTML5 form="..." attribute (HTMLButtonElement.form / HTMLInputElement.form).
+    if (unit.contains(button) || (button.form && button.form === unit)) return true;
+    // Permissive fallback: Apple's idmsa places the Sign In button outside the
+    // <form> in the DOM and doesn't use the form="..." attribute. Trust the
+    // click as a submission of this unit if (a) the unit has a password field
+    // and (b) that field has a non-empty value at click time.
+    const pwField = unit.querySelector('input[type="password"]');
+    return !!(pwField && pwField.value);
   };
 
+  // Multi-step login flows (Google, Apple, Microsoft) ask for the username on
+  // one page, then the password on a separate document where the username
+  // is no longer an input. Persist the most recent username typed on this
+  // origin via sessionStorage so we can recover it at password-submit time.
+  const USERNAME_STORAGE_KEY = '__bm_recentUsername';
+  const rememberUsername = (value) => {
+    if (!value) return;
+    try { sessionStorage.setItem(USERNAME_STORAGE_KEY, value); } catch (e) {}
+  };
+  const recallUsername = () => {
+    try { return sessionStorage.getItem(USERNAME_STORAGE_KEY) || ''; } catch (e) { return ''; }
+  };
+
+  // Watch any username/email-like input — even on pages with no password field
+  // (e.g. Google's identifier step) — and stash its value as the user types.
+  document.addEventListener('input', (ev) => {
+    const t = ev.target;
+    if (!(t instanceof HTMLInputElement)) return;
+    const auto = (t.getAttribute('autocomplete') || '').toLowerCase();
+    if (t.type === 'email' ||
+        auto.includes('username') ||
+        auto.includes('email')) {
+      rememberUsername(t.value);
+    }
+  }, true);
+
   const captureSubmission = (rec) => {
-    const username = rec.usernameField ? rec.usernameField.value : '';
+    let username = rec.usernameField ? rec.usernameField.value : '';
     const password = rec.passwordField ? rec.passwordField.value : '';
     if (!password) return;
+    if (!username) username = recallUsername();
     post({
       kind: 'formSubmitted',
       unitId: rec.unit.getAttribute(UNIT_ID_ATTR),
@@ -316,13 +387,52 @@
     el.dispatchEvent(new KeyboardEvent('keyup',   { bubbles: true }));
   };
 
+  // Recursively walk same-origin iframes to find a frame whose
+  // __BrowsePasswordManager has the requested field. Returns the inner namespace
+  // object (or null). Cross-origin iframes throw on contentWindow access; we skip.
+  const findInnerNamespaceFor = (fieldIds) => {
+    const iframes = document.querySelectorAll('iframe');
+    for (const frame of iframes) {
+      try {
+        const inner = frame.contentWindow && frame.contentWindow.__BrowsePasswordManager;
+        if (!inner) continue;
+        // The inner frame's __findFieldById is internal; we instead just call the
+        // inner frame's fillField/fillCredential which runs its own search and
+        // recurses if needed. Returning the inner namespace lets the caller invoke.
+        for (const id of fieldIds) {
+          if (id && frame.contentDocument && frame.contentDocument.querySelector('[' + FIELD_ID_ATTR + '="' + id + '"]')) {
+            return inner;
+          }
+        }
+      } catch (e) { /* cross-origin: skip */ }
+    }
+    return null;
+  };
+
   const namespace = {
     fillField: function ({ fieldId, value }) {
-      fillElement(findFieldById(fieldId), value);
+      const local = findFieldById(fieldId);
+      if (local) { fillElement(local, value); return; }
+      const inner = findInnerNamespaceFor([fieldId]);
+      if (inner && typeof inner.fillField === 'function') {
+        inner.fillField({ fieldId, value });
+      }
     },
     fillCredential: function ({ usernameFieldId, username, passwordFieldId, password }) {
-      fillElement(findFieldById(usernameFieldId), username);
-      fillElement(findFieldById(passwordFieldId), password);
+      const u = findFieldById(usernameFieldId);
+      const p = findFieldById(passwordFieldId);
+      if (u || p) {
+        fillElement(u, username);
+        fillElement(p, password);
+        return;
+      }
+      // Delegate to a same-origin iframe whose namespace owns these field ids
+      // (Apple's idmsa form lives in an iframe; the main frame's evaluateJavaScript
+      // call has to recurse to find the right realm).
+      const inner = findInnerNamespaceFor([usernameFieldId, passwordFieldId]);
+      if (inner && typeof inner.fillCredential === 'function') {
+        inner.fillCredential({ usernameFieldId, username, passwordFieldId, password });
+      }
     },
     rescan: scan,
   };

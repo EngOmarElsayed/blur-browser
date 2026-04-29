@@ -17,9 +17,12 @@ struct DetectedForm: Decodable {
     let unitId: String
     let classification: FormClassification
     let usernameFieldId: String?
-    let passwordFieldId: String
+    /// Nil for standalone username forms (multi-step login email step has no
+    /// password input on the page).
+    let passwordFieldId: String?
     let usernameRect: CGRectPayload?
-    let passwordRect: CGRectPayload
+    /// Nil for standalone username forms.
+    let passwordRect: CGRectPayload?
 }
 
 enum InboundMessage: Decodable {

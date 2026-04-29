@@ -78,13 +78,16 @@ final class PasswordManagerCoordinator: NSObject {
     private func handle(_ msg: InboundMessage) {
         switch msg {
         case .scriptReady:
-            // Don't wipe the map — cross-origin iframe scriptReadys (Stripe, analytics, etc.)
-            // would clobber a real main-frame submission. Instead, evict only stale entries
-            // and check whether the main webView has navigated since a recent submission.
             evictStaleSubmissions()
             checkForNavigationSuccess()
         case .formsDetected(_, let forms):
-            self.lastDetectedForms = forms
+            // Ignore empty payloads. With same-origin iframes (e.g., Apple's idmsa
+            // login lives in an iframe), the main frame and the iframe each post
+            // formsDetected. The main frame typically has 0 forms; without this
+            // guard it would clobber the iframe's real form list.
+            if !forms.isEmpty {
+                self.lastDetectedForms = forms
+            }
         case let .fieldFocused(unitId, fieldId, role, rect):
             presentAutofillIfPossible(unitId: unitId, fieldId: fieldId, role: role, rectInDoc: rect.cgRect)
         case .fieldBlurred:
@@ -126,7 +129,6 @@ final class PasswordManagerCoordinator: NSObject {
             guard let captured = entry.capturedURL else { continue }
             if currentURL.host != captured.host || currentURL.path != captured.path {
                 handleSuccess(unitId: unitId)
-                // handleSuccess removes the entry; loop will keep going for any others.
             }
         }
     }
