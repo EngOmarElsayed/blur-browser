@@ -60,9 +60,32 @@ struct SavePromptView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(Color(nsColor: Colors.onSurfaceSecondary))
                 Spacer()
-                Button(primaryLabel) { onSubmit(username, password) }
+
+                Button {
+                    onClose()
+                } label: {
+                    Text("Skip")
+                        .foregroundStyle(Color(nsColor: Colors.accentPrimary))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 12)
+                        .background(Color(nsColor: Colors.hoverBg))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+
+
+                Button(action: {
+                    onSubmit(username, password)
+                }, label: {
+                    Text(primaryLabel)
+                        .foregroundStyle(Color(nsColor: .white))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 12)
+                        .background(Color(nsColor: Colors.accentPrimary))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                })
                     .keyboardShortcut(.return, modifiers: .command)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.plain)
             }
         }
         .padding(14)
@@ -71,7 +94,7 @@ struct SavePromptView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color(nsColor: Colors.borderLight), lineWidth: 1)
+                .stroke(Color(nsColor: Colors.accentPrimary), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.18), radius: 20, x: 0, y: 8)
     }

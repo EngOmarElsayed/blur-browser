@@ -32,20 +32,20 @@ struct AutofillPopoverView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color(nsColor: Colors.borderLight), lineWidth: 1)
+                .stroke(Color(nsColor: Colors.accentPrimary), lineWidth: 1)
         )
     }
 
     private func row(for cred: Credential, isSelected: Bool) -> some View {
         HStack(spacing: 10) {
-            Circle()
-                .fill(Color(nsColor: Colors.accentPrimary))
-                .frame(width: 24, height: 24)
-                .overlay(
-                    Text(initial(cred.username))
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color(nsColor: Colors.foregroundInverse))
-                )
+            if isSelected {
+                Image(systemName: "touchid")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundStyle(Color(nsColor: Colors.accentPrimary))
+                    .frame(width: 20, height: 20)
+            }
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(cred.username)
                     .font(.system(size: 13, weight: .medium))
@@ -56,17 +56,8 @@ struct AutofillPopoverView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(Color(nsColor: Colors.onSurfaceSecondary))
             }
-
-            Spacer()
-
-            if isSelected {
-                Image(systemName: "touchid")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundStyle(Color(nsColor: Colors.accentPrimary))
-                    .frame(width: 20, height: 20)
-            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(isSelected ? Color(nsColor: Colors.hoverBg) : Color.clear)
