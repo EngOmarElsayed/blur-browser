@@ -243,6 +243,10 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
         guard let vc = viewController else { return }
         vc.clearErrorPage()
         vc.onNavigationFinished()
+        // Save-on-success for HTTP Basic/Digest auth: if the user just submitted
+        // credentials via AuthenticationDialogView, this didFinish means they
+        // worked — fire the existing save-prompt decision matrix.
+        vc.passwordCoordinator?.noteAuthSubmissionFinished()
 
         // Ask the page for its real declared favicon (overrides the optimistic
         // /favicon.ico guess set on URL change).
@@ -587,14 +591,29 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
             let host = protectionSpace.host
             let realm = protectionSpace.realm
 
+            // A previous attempt failed; the credentials we recorded last time
+            // were wrong. Drop them so the wrong creds don't get saved if the
+            // user retries successfully (a fresh recordAuthSubmission will
+            // overwrite this on the next submit).
+            if challenge.previousFailureCount > 0 {
+                self.viewController?.passwordCoordinator?.discardPendingAuthSubmission()
+            }
+
             // If we've already failed too many times, cancel
             if challenge.previousFailureCount >= 3 {
                 completionHandler(.cancelAuthenticationChallenge, nil)
                 return
             }
 
-            self.viewController?.showAuthenticationDialog(host: host, realm: realm) { username, password in
+            self.viewController?.showAuthenticationDialog(host: host, realm: realm) { [weak self] username, password in
                 if let username, let password {
+                    // Record for save-on-success. The actual save fires from
+                    // didFinish via PasswordManagerCoordinator.noteAuthSubmissionFinished.
+                    if let url = webView.url {
+                        self?.viewController?.passwordCoordinator?.recordAuthSubmission(
+                            username: username, password: password, url: url
+                        )
+                    }
                     let credential = URLCredential(
                         user: username,
                         password: password,
@@ -602,6 +621,7 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
                     )
                     completionHandler(.useCredential, credential)
                 } else {
+                    self?.viewController?.passwordCoordinator?.discardPendingAuthSubmission()
                     completionHandler(.cancelAuthenticationChallenge, nil)
                 }
             }

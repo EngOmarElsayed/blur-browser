@@ -10,8 +10,11 @@ final class AuthenticationDialogView: NSView {
 
     var onSubmit: ((String, String) -> Void)?
     var onCancel: (() -> Void)?
+    /// Fires when the username field becomes first responder. Used by the
+    /// password-manager autofill flow to anchor its popover to this field.
+    var onUsernameFieldFocused: (() -> Void)?
 
-    private let usernameField = NSTextField()
+    private let usernameField = FocusReportingTextField()
     private let passwordField = NSSecureTextField()
 
     init(host: String, realm: String?) {
@@ -63,7 +66,6 @@ final class AuthenticationDialogView: NSView {
 
         // Password field in rounded wrapper
         configureTextField(passwordField, placeholder: "Password")
-        passwordField.contentType = .password
         let passwordWrapper = makeFieldWrapper(for: passwordField)
 
         // Buttons
@@ -127,10 +129,36 @@ final class AuthenticationDialogView: NSView {
             buttonStack.heightAnchor.constraint(equalToConstant: 28),
         ])
 
+        usernameField.onBecomeFirstResponder = { [weak self] in
+            self?.onUsernameFieldFocused?()
+        }
+
         // Focus username field on appear
         DispatchQueue.main.async { [weak self] in
             self?.window?.makeFirstResponder(self?.usernameField)
         }
+    }
+
+    /// Returns the username field's frame in screen coordinates.
+    /// Used by the password-manager autofill popover to anchor itself.
+    var usernameFieldScreenRect: CGRect {
+        guard let window = window, let wrapper = usernameField.superview else { return .zero }
+        // The dialog uses Auto Layout. On the very first show, the
+        // username-field becomes-first-responder callback fires before the
+        // layout pass has run, leaving usernameField.frame at .zero. Force
+        // layout so the rect we hand to the popover is the real on-screen
+        // position rather than a stale pre-layout value.
+        layoutSubtreeIfNeeded()
+        let rectInDialog = self.convert(usernameField.frame, from: wrapper)
+        let rectInWindow = self.convert(rectInDialog, to: nil)
+        return window.convertToScreen(rectInWindow)
+    }
+
+    /// Programmatically fill both fields. Used by the autofill flow after the
+    /// user picks a credential and authenticates with Touch ID.
+    func fill(username: String, password: String) {
+        usernameField.stringValue = username
+        passwordField.stringValue = password
     }
 
     private func configureTextField(_ field: NSTextField, placeholder: String) {
@@ -181,6 +209,20 @@ final class AuthenticationDialogView: NSView {
         }, completionHandler: {
             self.removeFromSuperview()
         })
+    }
+}
+
+/// NSTextField subclass that surfaces a callback when it becomes first responder.
+/// The dialog uses this to anchor the password-manager autofill popover to the
+/// username field the moment focus lands there (including the initial auto-focus
+/// in `setup`).
+private final class FocusReportingTextField: NSTextField {
+    var onBecomeFirstResponder: (() -> Void)?
+
+    override func becomeFirstResponder() -> Bool {
+        let result = super.becomeFirstResponder()
+        if result { onBecomeFirstResponder?() }
+        return result
     }
 }
 

@@ -136,25 +136,75 @@ final class PasswordManagerCoordinator: NSObject {
     private func handleSuccess(unitId: String) {
         guard let payload = lastSubmissionByUnit.removeValue(forKey: unitId) else { return }
         guard let url = webView?.url, let site = SiteIdentity.key(for: url) else { return }
+        captureCredential(site: site, username: payload.username, password: payload.password)
+    }
+
+    /// Shared decision matrix used by both the form-based success path and the
+    /// HTTP-auth-dialog success path. Applies the no-op / save / update / blocklist
+    /// rules and fires the SavePromptOverlay via `pendingSaveCredential`.
+    private func captureCredential(site: String, username: String, password: String) {
         if blocklistStore.contains(site) { return }
-
         let existing = passwordStore.lookup(forSite: site)
-
         // Same username, same password → no-op (already saved, nothing to update).
-        if existing.contains(where: { $0.username == payload.username && $0.password == payload.password }) {
+        if existing.contains(where: { $0.username == username && $0.password == password }) {
             return
         }
-
-        if let match = existing.first(where: { $0.username == payload.username }) {
+        if let match = existing.first(where: { $0.username == username }) {
             setPendingSaveCredential(.update(site: site,
-                                             username: payload.username,
-                                             password: payload.password,
+                                             username: username,
+                                             password: password,
                                              existingId: match.id))
         } else {
             setPendingSaveCredential(.save(site: site,
-                                           username: payload.username,
-                                           password: payload.password))
+                                           username: username,
+                                           password: password))
         }
+    }
+
+    // MARK: - HTTP auth dialog path
+
+    /// HTTP Basic / Digest credentials submitted via `AuthenticationDialogView`.
+    /// Recorded at submit time, consumed on the next successful `didFinish` for
+    /// the same site (or discarded on subsequent challenges / cancels / TTL).
+    private struct PendingAuthSubmission {
+        let site: String
+        let username: String
+        let password: String
+        let capturedAt: Date
+    }
+    private var pendingAuthSubmission: PendingAuthSubmission?
+    private let authSubmissionTTL: TimeInterval = 30
+
+    /// Called by `WebViewCoordinator` when the user submits the auth dialog.
+    /// `url` is the page URL that triggered the challenge (used for site-key
+    /// derivation; HTTP-only URLs are refused via `SiteIdentity.key`).
+    func recordAuthSubmission(username: String, password: String, url: URL) {
+        guard let site = SiteIdentity.key(for: url) else {
+            pendingAuthSubmission = nil
+            return
+        }
+        pendingAuthSubmission = PendingAuthSubmission(
+            site: site, username: username, password: password, capturedAt: Date()
+        )
+    }
+
+    /// Called by `WebViewCoordinator.webView(_:didFinish:)`. If a recent auth
+    /// submission is pending and still within TTL, treat the navigation as a
+    /// successful authentication and fire the save/update prompt.
+    func noteAuthSubmissionFinished() {
+        guard let pending = pendingAuthSubmission else { return }
+        pendingAuthSubmission = nil
+        guard Date().timeIntervalSince(pending.capturedAt) < authSubmissionTTL else { return }
+        captureCredential(site: pending.site,
+                          username: pending.username,
+                          password: pending.password)
+    }
+
+    /// Called when the user cancels the dialog or a fresh challenge with
+    /// `previousFailureCount > 0` arrives — the previous submission was wrong
+    /// and shouldn't be saved.
+    func discardPendingAuthSubmission() {
+        pendingAuthSubmission = nil
     }
 
     // MARK: - Public actions (called from the SavePromptView buttons)

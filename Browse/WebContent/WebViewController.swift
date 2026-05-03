@@ -388,12 +388,37 @@ final class WebViewController: NSViewController {
 
         dialog.onSubmit = { [weak self] username, password in
             completion(username, password)
+            self?.autofillPanel.hide()
             self?.dismissModalBackdrop()
         }
 
         dialog.onCancel = { [weak self] in
             completion(nil, nil)
+            self?.autofillPanel.hide()
             self?.dismissModalBackdrop()
+        }
+
+        // Password-manager autofill: show the existing AutofillPopoverPanel anchored
+        // to the dialog's username field whenever it gains focus, listing any saved
+        // credentials for the current site.
+        dialog.onUsernameFieldFocused = { [weak self, weak dialog] in
+            guard let self,
+                  let dialog,
+                  let url = self.currentWebView?.url,
+                  let site = SiteIdentity.key(for: url),
+                  let window = dialog.window else { return }
+            let creds = self.passwordStore.lookup(forSite: site)
+            guard !creds.isEmpty else {
+                self.autofillPanel.hide()
+                return
+            }
+            let rect = dialog.usernameFieldScreenRect
+            self.autofillPanel.show(below: rect, in: window, credentials: creds) { [weak self, weak dialog] cred in
+                guard let self, let dialog else { return }
+                Task { @MainActor in
+                    await self.fillAuthDialog(dialog, with: cred)
+                }
+            }
         }
 
         // Blur first so the dialog sits on top of it
@@ -761,6 +786,22 @@ final class WebViewController: NSViewController {
                   let json = String(data: data, encoding: .utf8) else { return }
             _ = try? await webView.evaluateJavaScript("__BrowsePasswordManager.fillCredential(\(json))")
         }
+    }
+
+    /// Sibling of `fillCredential(_:into:)` for the HTTP-auth dialog path.
+    /// Same Touch ID gate; on success, sets the dialog's NSTextField values
+    /// directly (no JS bridge — these are native fields).
+    private func fillAuthDialog(_ dialog: AuthenticationDialogView, with cred: Credential) async {
+        let context = LAContext()
+        let reason = "Fill saved password for \(cred.site)"
+        let ok: Bool
+        do {
+            ok = try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
+        } catch {
+            ok = false
+        }
+        guard ok else { return }
+        dialog.fill(username: cred.username, password: cred.password)
     }
 
     private func layoutFindBar() {
