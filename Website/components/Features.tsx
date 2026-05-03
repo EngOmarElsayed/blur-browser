@@ -45,6 +45,11 @@ const features: FeatureCard[] = [
     screenshot: "/funny-error.png",
   },
   {
+    title: "Passwords, kept",
+    body: "Your vault, built into the browser. Encrypted on-device, unlocked with Touch ID. Import from 1Password or Apple Keychain in one drag.",
+    screenshot: "/password-manager.png",
+  },
+  {
     title: "Privacy with receipts",
     body: "Real numbers, not promises. See exactly which trackers Blur blocked for you, broken down by site and source.",
     screenshot: "/privacy-report.png",
