@@ -16,7 +16,7 @@ struct ErrorPageView: View {
                 // Title
                 Text(error.message.title)
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Color(nsColor: Colors.surfacePrimary))
+                    .foregroundStyle(Color(nsColor: Colors.onSurfacePrimary))
                     .multilineTextAlignment(.center)
 
                 // Subtitle

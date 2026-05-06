@@ -230,7 +230,12 @@ final class TabManager {
             url = URL(string: "https://\(urlString)")
         } else {
             let encoded = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString
-            url = URL(string: "https://www.google.com/search?q=\(encoded)")
+            let engine = SettingsStore.shared.searchEngine
+            // Google's anti-abuse heuristics treat bare /search?q= hits as
+            // bot-like and serve a CAPTCHA. Real Safari appends client=safari,
+            // which Google whitelists — match that to avoid the interstitial.
+            let suffix = engine == .google ? "&client=safari" : ""
+            url = URL(string: "\(engine.searchURL)\(encoded)\(suffix)")
         }
 
         if let url {
