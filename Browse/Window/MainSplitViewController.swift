@@ -248,16 +248,16 @@ final class MainSplitViewController: NSViewController {
             height: bounds.height - chromeEdge
         )
 
-        // Right divider
-        rightDividerView.isHidden = isHistoryCollapsed
-        if !isHistoryCollapsed {
-            rightDividerView.frame = NSRect(
-                x: bounds.width - effectiveHistoryWidth - chromeEdge - (dividerHitWidth - 1) / 2,
-                y: chromeEdge, width: dividerHitWidth,
-                height: bounds.height - chromeEdge
-            )
-            view.addSubview(rightDividerView, positioned: .above, relativeTo: historyHostingVC.view)
-        }
+//        // Right divider
+//        rightDividerView.isHidden = isHistoryCollapsed
+//        if !isHistoryCollapsed {
+//            rightDividerView.frame = NSRect(
+//                x: bounds.width - effectiveHistoryWidth - chromeEdge - (dividerHitWidth - 1) / 2,
+//                y: chromeEdge, width: dividerHitWidth,
+//                height: bounds.height - chromeEdge
+//            )
+//            view.addSubview(rightDividerView, positioned: .above, relativeTo: historyHostingVC.view)
+//        }
 
         // ── Content container (toolbar + web view) ──
         let contentRight = isHistoryCollapsed ? chromeEdge : effectiveHistoryWidth + chromeEdge + 1
