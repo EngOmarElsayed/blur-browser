@@ -37,7 +37,7 @@ enum Layout {
     static let toolbarHeight: CGFloat        = 52
     static let tabRowHeight: CGFloat         = 32
     static let urlBarHeight: CGFloat         = 36
-    static let quickSearchWidth: CGFloat     = 500
+    static let quickSearchWidth: CGFloat     = 650
     static let quickSearchInputHeight: CGFloat = 48
     static let quickSearchResultHeight: CGFloat = 40
     static let findBarHeight: CGFloat        = 40

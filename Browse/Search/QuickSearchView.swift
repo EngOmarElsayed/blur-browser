@@ -19,10 +19,6 @@ struct QuickSearchView: View {
                     .font(.system(size: 14))
                     .foregroundStyle(Color(nsColor: Colors.accentPrimary))
                     .focused($textFiledFocus)
-                    .onSubmit {
-                        viewModel.selectResult()
-                        onDismiss()
-                    }
                     .onChange(of: viewModel.searchText) {
                         viewModel.updateResults()
                     }
@@ -83,6 +79,9 @@ struct QuickSearchView: View {
                             ForEach(items) { result in
                                 resultRow(result, isSelected: result.id == viewModel.selectedID)
                                     .id(result.id)
+                                    .onHover { hovered in
+                                        viewModel.selectedID = hovered ? result.id: nil
+                                    }
                                     .onTapGesture {
                                         viewModel.selectedID = result.id
                                         viewModel.selectResult()

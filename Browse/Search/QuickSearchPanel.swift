@@ -66,6 +66,10 @@ final class QuickSearchOverlay {
                 self.viewModel.moveSelectionUp()
                 return nil
             }
+            if event.keyCode == 36 { // enter
+                self.viewModel.selectResult()
+                self.dismiss()
+            }
             return event
         }
     }

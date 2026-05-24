@@ -67,11 +67,13 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         configureNavButton(forwardButton, symbol: "chevron.right", action: #selector(goForward))
 
         // URL field container — rounded pill
+        let clickGesture = NSClickGestureRecognizer(target: self, action: #selector(handleUrlContainerMousClick))
         urlContainer.wantsLayer = true
         urlContainer.layer?.backgroundColor = Colors.surfacePrimary.cgColor
         urlContainer.layer?.borderColor = Colors.accentPrimary.cgColor
         urlContainer.layer?.borderWidth = 1
         urlContainer.layer?.cornerRadius = Layout.urlBarHeight / 2
+        urlContainer.addGestureRecognizer(clickGesture)
 
         // Lock icon — drawn inside the white URL bar, use onSurface* tokens
         lockIcon.image = NSImage(systemSymbolName: "lock.fill", accessibilityDescription: "Secure")
@@ -80,6 +82,8 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
 
         // URL text field — always dark since the URL bar is always white
         urlField.isBordered = false
+        urlField.isEditable = false
+        urlField.isSelectable = true
         urlField.drawsBackground = false
         urlField.font = .systemFont(ofSize: Typography.bodySize)
         urlField.textColor = Colors.accentPrimary
@@ -287,8 +291,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
     }
 
     func focusAndSelectAll() {
-        view.window?.makeFirstResponder(urlField)
-        urlField.currentEditor()?.selectAll(nil)
+        urlField.selectText(urlField)
     }
 
     func updateForTab(_ tab: BrowserTab?) {
@@ -339,6 +342,10 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
     }
 
     // MARK: - Actions
+    @objc func handleUrlContainerMousClick(_ gesture: NSClickGestureRecognizer) {
+        guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
+        wc.openQuickSearch()
+    }
 
     @objc private func goBack() {
         tabManager.selectedTab?.webView.goBack()

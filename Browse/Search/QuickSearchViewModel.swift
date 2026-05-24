@@ -49,7 +49,6 @@ final class QuickSearchViewModel {
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else {
             results = recentHistory()
-            selectedID = results.first?.id
             return
         }
 
@@ -82,7 +81,6 @@ final class QuickSearchViewModel {
         }
 
         results = all
-        selectedID = all.first?.id
 
         // Fetch Google suggestions
         suggestTask = Task {
@@ -153,7 +151,11 @@ final class QuickSearchViewModel {
     }
 
     func moveSelectionUp() {
-        guard let idx = selectedIndex, idx > 0 else { return }
+        guard let idx = selectedIndex, idx > 0 else {
+            selectedID = nil
+            return
+        }
+
         selectedID = results[idx - 1].id
     }
 

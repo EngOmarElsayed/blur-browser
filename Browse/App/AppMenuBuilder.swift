@@ -29,8 +29,7 @@ enum AppMenuBuilder {
         addItem(to: fileMenu, title: "Quick Search", action: #selector(AppDelegate.openQuickSearch(_:)), key: "k", target: delegate)
         addItem(to: fileMenu, title: "New Window", action: #selector(AppDelegate.openNewWindow), key: "n", target: delegate)
         fileMenu.addItem(.separator())
-        addItem(to: fileMenu, title: "Open File...", action: #selector(AppDelegate.openFile(_:)), key: "o", target: delegate)
-        addItem(to: fileMenu, title: "Open Location...", action: #selector(AppDelegate.focusSearch(_:)), key: "l", target: delegate)
+//        addItem(to: fileMenu, title: "Open File...", action: #selector(AppDelegate.openFile(_:)), key: "o", target: delegate)
         fileMenu.addItem(.separator())
         addItem(to: fileMenu, title: "Close Tab", action: #selector(AppDelegate.closeCurrentTab(_:)), key: "w", target: delegate)
         let fileMenuItem = NSMenuItem()
@@ -51,6 +50,7 @@ enum AppMenuBuilder {
         addItem(to: editMenu, title: "Find Next", action: #selector(AppDelegate.findNext(_:)), key: "g", target: delegate)
         addItem(to: editMenu, title: "Find Previous", action: #selector(AppDelegate.findPrevious(_:)), key: "G", modifiers: [.command, .shift], target: delegate)
         editMenu.addItem(.separator())
+        addItem(to: editMenu, title: "Select URL...", action: #selector(AppDelegate.focusSearch(_:)), key: "l", target: delegate)
         addItem(to: editMenu, title: "Copy URL", action: #selector(AppDelegate.copyURL(_:)), key: "C", modifiers: [.command, .shift], target: delegate)
         let editMenuItem = NSMenuItem()
         editMenuItem.submenu = editMenu
