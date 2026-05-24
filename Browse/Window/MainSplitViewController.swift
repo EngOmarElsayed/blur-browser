@@ -374,9 +374,9 @@ final class MainSplitViewController: NSViewController {
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.2
             ctx.allowsImplicitAnimation = true
-            isAddressBarHidden = true
+            isAddressBarHidden.toggle()
 
-            isSidebarCollapsed = true
+            isSidebarCollapsed.toggle()
             addressBar.setSidebarCollapsed(isSidebarCollapsed)
 
             layoutSubviews()

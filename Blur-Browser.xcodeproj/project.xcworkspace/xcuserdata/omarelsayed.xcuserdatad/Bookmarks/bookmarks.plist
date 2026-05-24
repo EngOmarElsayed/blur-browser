@@ -38,13 +38,13 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>        contentContainerView.wantsLayer = true
-        contentContainerView.layer?.cornerRadius = 16
+				<string>    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 1200, height: 800))
 </string>
 				<key>trailing</key>
-				<string>        contentContainerView.layer?.masksToBounds = true
-        view.addSubview(contentContainerView)
-
+				<string>        view.wantsLayer = true
+        view.layer?.backgroundColor = Colors.chromeBg.cgColor
+    }
 </string>
 			</dict>
 			<key>title</key>
