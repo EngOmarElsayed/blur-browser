@@ -242,9 +242,6 @@ final class WebViewController: NSViewController {
         if privacyReportHostingView.superview !== view {
             view.addSubview(privacyReportHostingView, positioned: .above, relativeTo: wallpaperView)
         }
-        // Refresh the snapshot whenever the new-tab page shows. Cheap — the
-        // SPI returns instantly from in-process WebKit cache.
-        Task { await PrivacyReportStore.shared.refresh() }
     }
 
     /// Called by the polling loop when the selected tab's URL changes (e.g.

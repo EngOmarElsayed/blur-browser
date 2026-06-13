@@ -1,10 +1,11 @@
 import AppKit
 import Observation
 import UniformTypeIdentifiers
+import FactoryKit
 
 @MainActor
 final class BrowserWindowController: NSWindowController, NSWindowDelegate {
-
+    @Injected(\.privacyReportStore) private var privacyReportStore
     let tabManager = TabManager()
     let historyStore = HistoryStore()
     let downloadStore = DownloadStore()
@@ -44,8 +45,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         // Privacy Report needs HistoryStore to compute the % of visited
         // sites that contacted trackers. Single shared instance — set once
         // per window-controller setup, idempotent.
-        PrivacyReportStore.shared.setHistoryStore(historyStore)
-        Task { await PrivacyReportStore.shared.refresh() }
+        Task { await privacyReportStore.refresh() }
 
         downloadManager = DownloadManager(store: downloadStore)
 

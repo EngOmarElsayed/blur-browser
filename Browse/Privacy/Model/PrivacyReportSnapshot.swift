@@ -3,7 +3,7 @@ import Foundation
 /// Immutable snapshot of the four widget metrics, scoped to the last 30 days.
 /// Computed by `PrivacyReportStore.refresh()` from raw `_WKResourceLoad...`
 /// records returned by `PrivacyReportService.fetchSummary()`.
-struct PrivacyReportSnapshot: Equatable {
+struct PrivacyReportSnapshot: Equatable, Sendable {
     /// True iff the user has at least one history entry in the last 30 days
     /// of using THIS browser. The widget is hidden entirely when false —
     /// we don't show a report on a user who hasn't browsed yet.
@@ -23,7 +23,7 @@ struct PrivacyReportSnapshot: Equatable {
     let lastUpdated: Date
 
     static let empty = PrivacyReportSnapshot(
-        hasBrowsingHistory: false,
+        hasBrowsingHistory: true,
         trackerCount: 0,
         pctSitesContacted: nil,
         topTracker: nil,

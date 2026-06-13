@@ -28,14 +28,12 @@ import Foundation
 
 extension WKWebsiteDataStore: WKWebsiteDataStoreSPI {}
 
-@MainActor
 enum PrivacyReportService {
-
     /// Make sure ITP is on. Default for `.default()` data store is already
     /// `true`, but be explicit so a misconfigured environment doesn't
     /// silently produce empty reports.
-    static func enableITP() {
-        let store = WKWebsiteDataStore.default()
+    static func enableITP() async {
+        let store = await WKWebsiteDataStore.default()
         let priv: WKWebsiteDataStoreSPI = store
         if store.responds(to: NSSelectorFromString("_setResourceLoadStatisticsEnabled:")) {
             priv.setResourceLoadStatisticsEnabled?(true)
@@ -46,7 +44,7 @@ enum PrivacyReportService {
     /// structs. Empty array if the SPI is unavailable or returns no data.
     /// Timestamps are decoded as Unix epoch (`Date(timeIntervalSince1970:)`).
     static func fetchSummary() async -> [ThirdPartyRecord] {
-        let store = WKWebsiteDataStore.default()
+        let store = await WKWebsiteDataStore.default()
         guard store.responds(to: NSSelectorFromString("_getResourceLoadStatisticsDataSummary:")) else {
             return []
         }
@@ -77,7 +75,7 @@ enum PrivacyReportService {
     /// Wipe WebKit's accumulated ITP stats. Backs the "Clear Privacy Report"
     /// flow. No-op if the SPI is unavailable on this OS.
     static func clearAll() async {
-        let store = WKWebsiteDataStore.default()
+        let store = await WKWebsiteDataStore.default()
         guard store.responds(to: NSSelectorFromString("_clearResourceLoadStatistics:")) else { return }
         let priv: WKWebsiteDataStoreSPI = store
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in

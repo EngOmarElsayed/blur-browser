@@ -1,26 +1,10 @@
 import SwiftUI
+import FactoryKit
 
-/// Apple-style Privacy Report widget rendered as a SwiftUI overlay over the
-/// new-tab wallpaper. Reads from `PrivacyReportStore.shared`; the whole
-/// view re-renders when `snapshot` updates.
-///
-/// Layout mirrors Safari's macOS Privacy Report card:
-///   ┌──────────────────────────────────────────────┐
-///   │ [shield]            Last 30 days             │
-///   │  Browse prevents   ┌─Trackers─┐ ┌─Websites─┐ │
-///   │  trackers from     │    9     │ │   48%    │ │
-///   │  profiling you.    └──────────┘ └──────────┘ │
-///   │                    ┌─Most contacted tracker─┐│
-///   │  Show More         │ google.com across 12   ││
-///   │                    └────────────────────────┘│
-///   └──────────────────────────────────────────────┘
 struct PrivacyReportView: View {
-    @State private var store = PrivacyReportStore.shared
+    @InjectedObservable(\.privacyReportStore) private var store
 
     var body: some View {
-        // Hide the widget entirely until the user has at least one browsing
-        // history entry in the last 30 days. Showing a "0 trackers" card
-        // before they've done anything is noise.
         if store.snapshot.hasBrowsingHistory {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Privacy Report")

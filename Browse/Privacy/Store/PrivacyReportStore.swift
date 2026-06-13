@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import FactoryKit
 
 /// Owns the live `PrivacyReportSnapshot` driving the new-tab widget.
 ///
@@ -11,9 +12,6 @@ import Observation
 @Observable
 @MainActor
 final class PrivacyReportStore {
-
-    static let shared = PrivacyReportStore()
-
     /// Most recent snapshot. Views render from this directly.
     private(set) var snapshot: PrivacyReportSnapshot = .empty
 
@@ -22,42 +20,32 @@ final class PrivacyReportStore {
     private(set) var isLoading: Bool = false
 
     /// Injected at startup so we can compute the % denominator from history.
-    private weak var historyStore: HistoryStore?
+    @ObservationIgnored @Injected(\.historyStore) private var historyStore
 
-    private init() {}
+    init() {}
+}
 
-    func setHistoryStore(_ store: HistoryStore) {
-        self.historyStore = store
-    }
-
-    // MARK: - Refresh
-
-    /// Pull the latest summary from `PrivacyReportService`, filter to last 30
-    /// days, **scope it to sites the user actually visited in this browser**,
-    /// and publish the resulting snapshot.
-    ///
-    /// All four metrics are derived from the user's `HistoryStore`:
-    ///   - If history is empty (last 30d) → snapshot is all zeros. We never
-    ///     report on sites the user didn't visit in our browser.
-    ///   - tracker count, top tracker, % — all computed only over ITP records
-    ///     whose first-party domain matches a host in the user's history.
-    func refresh() async {
-        isLoading = true
-        defer { isLoading = false }
+// MARK: - PrivacyReportStoreProtocol
+extension PrivacyReportStore: PrivacyReportStoreProtocol {
+    @concurrent func refresh() async {
+        await setIsLoading(to: true)
+        defer { await setIsLoading(to: false) }
 
         let thirtyDaysAgo = Date().addingTimeInterval(-30 * 86400)
-        let historyHosts: Set<String> = historyStore?.distinctHosts(since: thirtyDaysAgo) ?? []
+        let historyHosts: Set<String> = await historyStore.distinctHosts(since: thirtyDaysAgo)
 
         // No browsing in this browser → no privacy report at all. The view
         // observes `hasBrowsingHistory` and hides itself entirely.
         guard !historyHosts.isEmpty else {
-            snapshot = PrivacyReportSnapshot(
+            let NewSnapshot = PrivacyReportSnapshot(
                 hasBrowsingHistory: false,
                 trackerCount: 0,
                 pctSitesContacted: 0,
                 topTracker: nil,
                 lastUpdated: Date()
             )
+
+            await updateSnapshot(with: NewSnapshot)
             return
         }
 
@@ -99,18 +87,31 @@ final class PrivacyReportStore {
         let hostsWithTrackers = Set(aggregated.flatMap(\.matchingHosts))
         let pct = Int((Double(hostsWithTrackers.count) / Double(historyHosts.count) * 100).rounded())
 
-        snapshot = PrivacyReportSnapshot(
+        let NewSnapshot = PrivacyReportSnapshot(
             hasBrowsingHistory: true,
             trackerCount: trackerCount,
             pctSitesContacted: pct,
             topTracker: topTracker,
             lastUpdated: Date()
         )
+
+        await updateSnapshot(with: NewSnapshot)
     }
 
     /// Wipe ITP data and recompute. Backs the Settings → Privacy → Clear button.
-    func clearAndRefresh() async {
+    @concurrent func clearAndRefresh() async {
         await PrivacyReportService.clearAll()
         await refresh()
+    }
+}
+
+// MARK: - Private Methods
+extension PrivacyReportStore {
+    private func updateSnapshot(with value: PrivacyReportSnapshot) {
+        snapshot = value
+    }
+
+    private func setIsLoading(to value: Bool) {
+        isLoading = value
     }
 }

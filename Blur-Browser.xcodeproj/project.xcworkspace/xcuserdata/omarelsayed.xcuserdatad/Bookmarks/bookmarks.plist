@@ -60,13 +60,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>504</string>
+					<string>501</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>503</string>
+					<string>500</string>
 					<key>Timestamp</key>
-					<string>798534368.514565</string>
+					<string>803033510.391916</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -82,16 +82,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>
+				<string>        view.addSubview(overlay)
 </string>
 				<key>leading</key>
-				<string>        tabManager.tabs.first(where: { $0.webView === webView })
-    }
+				<string>        overlay.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.4).cgColor
+        overlay.autoresizingMask = [.width, .height]
 </string>
 				<key>trailing</key>
-				<string>    func openURLInNewTab(_ url: URL) {
-        onNewTabRequested?(url)
-    }
+				<string>        dimOverlay = overlay
+
+        // Fade in
 </string>
 			</dict>
 			<key>type</key>

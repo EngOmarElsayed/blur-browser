@@ -12,7 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppMenuBuilder.buildMainMenu()
 
         // POC: confirm WebKit's ITP SPI is reachable before any windows open
-        PrivacyReportService.enableITP()
+        Task { await PrivacyReportService.enableITP() }
 
         // One-time cleanup: older builds persisted all cookies (including
         // session cookies) to UserDefaults in plain text. That's a credential-
