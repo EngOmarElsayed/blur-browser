@@ -60,7 +60,7 @@ struct HistorySidebarView: View {
         }
     }
 
-    private func historyRow(_ entry: HistoryEntry) -> some View {
+    private func historyRow(_ entry: BrowserHistoryEntry) -> some View {
         Button {
             tabManager.navigate(to: entry.url)
         } label: {

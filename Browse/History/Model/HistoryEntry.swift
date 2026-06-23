@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class HistoryEntry {
+final class BrowserHistoryEntry {
     var id: UUID = UUID()
     var url: String
     var title: String

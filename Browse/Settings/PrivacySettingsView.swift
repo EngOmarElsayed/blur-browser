@@ -228,11 +228,11 @@ struct PrivacySettingsView: View {
 
     private func clearHistory() {
         do {
-            let schema = Schema([HistoryEntry.self])
+            let schema = Schema([BrowserHistoryEntry.self])
             let config = ModelConfiguration(isStoredInMemoryOnly: false)
             let container = try ModelContainer(for: schema, configurations: [config])
             let context = container.mainContext
-            try context.delete(model: HistoryEntry.self)
+            try context.delete(model: BrowserHistoryEntry.self)
             try context.save()
         } catch {
             print("[Settings] Failed to clear history: \(error)")

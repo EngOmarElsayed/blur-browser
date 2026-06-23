@@ -5,13 +5,13 @@ final class HistoryStore {
     private var modelContainer: ModelContainer?
     private var modelContext: ModelContext?
 
-    var entries: [HistoryEntry] = []
+    var entries: [BrowserHistoryEntry] = []
 
     init() { initManger() }
 
     func initManger() {
         do {
-            let schema = Schema([HistoryEntry.self])
+            let schema = Schema([BrowserHistoryEntry.self])
             let config = ModelConfiguration(isStoredInMemoryOnly: false)
             let modelContainer = try ModelContainer(for: schema, configurations: [config])
             let modelContext = ModelContext(modelContainer)
@@ -28,7 +28,7 @@ final class HistoryStore {
     struct GroupedHistory: Identifiable {
         let id: String
         let label: String
-        let entries: [HistoryEntry]
+        let entries: [BrowserHistoryEntry]
     }
 
     var groupedEntries: [GroupedHistory] {
@@ -39,7 +39,7 @@ final class HistoryStore {
         let last7Days = calendar.date(byAdding: .day, value: -7, to: startOfToday)!
         let last30Days = calendar.date(byAdding: .day, value: -30, to: startOfToday)!
 
-        var groups: [(String, String, [HistoryEntry])] = [
+        var groups: [(String, String, [BrowserHistoryEntry])] = [
             ("today", "Today", []),
             ("yesterday", "Yesterday", []),
             ("last7", "Last 7 Days", []),
@@ -71,7 +71,7 @@ final class HistoryStore {
 extension HistoryStore: HistoryStoreProtocol {
     func addEntry(url: URL, title: String, faviconURL: String? = nil) {
         guard let ctx = modelContext else { return }
-        let entry = HistoryEntry(
+        let entry = BrowserHistoryEntry(
             url: url.absoluteString,
             title: title,
             faviconURL: faviconURL
@@ -81,7 +81,7 @@ extension HistoryStore: HistoryStoreProtocol {
         fetchEntries()
     }
 
-    func deleteEntry(_ entry: HistoryEntry) {
+    func deleteEntry(_ entry: BrowserHistoryEntry) {
         guard let ctx = modelContext else { return }
         ctx.delete(entry)
         try? ctx.save()
@@ -90,13 +90,13 @@ extension HistoryStore: HistoryStoreProtocol {
 
     func clearHistory(olderThan date: Date? = nil) {
         guard let ctx = modelContext else { return }
-        let descriptor: FetchDescriptor<HistoryEntry>
+        let descriptor: FetchDescriptor<BrowserHistoryEntry>
         if let date {
-            descriptor = FetchDescriptor<HistoryEntry>(
+            descriptor = FetchDescriptor<BrowserHistoryEntry>(
                 predicate: #Predicate { $0.timestamp < date }
             )
         } else {
-            descriptor = FetchDescriptor<HistoryEntry>()
+            descriptor = FetchDescriptor<BrowserHistoryEntry>()
         }
         if let results = try? ctx.fetch(descriptor) {
             for entry in results {
@@ -107,7 +107,7 @@ extension HistoryStore: HistoryStoreProtocol {
         fetchEntries()
     }
 
-    func search(query: String) -> [HistoryEntry] {
+    func search(query: String) -> [BrowserHistoryEntry] {
         guard !query.isEmpty else { return entries }
         let lowered = query.lowercased()
         return entries.filter {
@@ -121,7 +121,7 @@ extension HistoryStore: HistoryStoreProtocol {
     /// that contacted trackers" denominator.
     func distinctHosts(since date: Date) -> Set<String> {
         guard let ctx = modelContext else { return [] }
-        let descriptor = FetchDescriptor<HistoryEntry>(
+        let descriptor = FetchDescriptor<BrowserHistoryEntry>(
             predicate: #Predicate { $0.timestamp >= date }
         )
         let recentEntries = (try? ctx.fetch(descriptor)) ?? []
@@ -137,7 +137,7 @@ extension HistoryStore: HistoryStoreProtocol {
 
     private func fetchEntries() {
         guard let ctx = modelContext else { return }
-        var descriptor = FetchDescriptor<HistoryEntry>(
+        var descriptor = FetchDescriptor<BrowserHistoryEntry>(
             sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
         )
         descriptor.fetchLimit = 500
