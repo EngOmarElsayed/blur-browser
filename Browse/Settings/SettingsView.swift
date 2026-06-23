@@ -11,6 +11,7 @@ enum SettingsTab: String, CaseIterable {
 
 struct SettingsView: View {
     @State private var selectedTab: SettingsTab = .general
+    @State private var themeStore = ThemeStore.shared
 
     var body: some View {
         ZStack {
@@ -41,7 +42,7 @@ struct SettingsView: View {
                 NSApp.keyWindow?.close()
             } label: {
                 Image(systemName: "xmark")
-                    .foregroundStyle(Color(nsColor: ThemeStore.shared.foregroundColor))
+                    .foregroundStyle(SettingsColors.chromeFgPrimary)
                     .padding(.leading, 16)
             }
             .buttonStyle(.plain)
@@ -50,8 +51,8 @@ struct SettingsView: View {
 
             // Title
             Text("Settings")
-                .font(.custom(Typography.fontFamily, size: 13).weight(.semibold))
-                .foregroundStyle(Color(nsColor: ThemeStore.shared.foregroundColor))
+                .font(.custom(Typography.fontFamily, size: Typography.headingSize).weight(.semibold))
+                .foregroundStyle(SettingsColors.chromeFgPrimary)
                 .frame(maxWidth: .infinity, alignment: .center)
 
             Spacer()
@@ -74,14 +75,14 @@ struct SettingsView: View {
                     }
                 } label: {
                     Text(tab.rawValue)
-                        .font(.custom(Typography.fontFamily, size: 12).weight(selectedTab == tab ? .medium : .regular))
-                        .foregroundStyle(selectedTab == tab ? Color(nsColor: Colors.onSurfacePrimary) : SettingsColors.fgSecondary)
+                        .font(.custom(Typography.fontFamily, size: Typography.bodySize).weight(selectedTab == tab ? .semibold : .medium))
+                        .foregroundStyle(selectedTab == tab ? Color(nsColor: Colors.onSurfacePrimary) : SettingsColors.chromeFgSecondary)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 6)
                         .background {
                             if selectedTab == tab {
                                 RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.white)
+                                    .fill(Color.white.opacity(themeStore.isDark ? 0.98 : 1.0))
                                     .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
                             }
                         }
