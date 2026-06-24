@@ -12,4 +12,8 @@ extension Container {
     var historyLocalDataStore: Factory<HistoryLocalDataStoreProtocol> {
         Factory(self) { HistoryLocalDataStore() }.singleton
     }
+
+    var historyRepository: Factory<HistoryRepositoryProtocol> {
+        Factory(self) { HistoryRepository() }
+    }
 }
