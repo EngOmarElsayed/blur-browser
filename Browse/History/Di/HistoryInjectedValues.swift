@@ -9,8 +9,7 @@ import Foundation
 import FactoryKit
 
 extension Container {
-    @HistoryLocalDataStoreActor
     var historyLocalDataStore: Factory<HistoryLocalDataStoreProtocol> {
-        Factory(self) { HistoryLocalDataStore.shared }
+        Factory(self) { HistoryLocalDataStore() }.singleton
     }
 }

@@ -1,18 +1,25 @@
+//
+//  AppDelegate.swift
+//  Blur-Browser
+//
+//  Created by Omar Elsayed on 23/06/2026.
+//
+
 import AppKit
+import FactoryKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-
+    @Injected(\.historyLocalDataStore) private var historyLocalDataStore
     private var windowController: BrowserWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Disable sudden termination so we get a chance to save session
         ProcessInfo.processInfo.disableSuddenTermination()
-
         AppMenuBuilder.buildMainMenu()
 
         // POC: confirm WebKit's ITP SPI is reachable before any windows open
-        Task { await PrivacyReportService.enableITP() }
+        Task { await PrivacyReportService.enableITP() } // Remove this one
+        Task { try? await historyLocalDataStore.initLocalDataStore() }
 
         // One-time cleanup: older builds persisted all cookies (including
         // session cookies) to UserDefaults in plain text. That's a credential-

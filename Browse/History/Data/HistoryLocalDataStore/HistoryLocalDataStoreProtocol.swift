@@ -9,8 +9,8 @@ import Foundation
 import SwiftData
 
 // MARK: - HistoryLocalDataStoreProtocol
-@HistoryLocalDataStoreActor
-protocol HistoryLocalDataStoreProtocol: Sendable {
+protocol HistoryLocalDataStoreProtocol: Actor {
+    func initLocalDataStore() throws
     func add(title: String, url: URL, faviconUrl: URL?) throws
     func deleteItems(where predict: Predicate<BrowserHistoryEntry>?) throws
 
@@ -26,30 +26,23 @@ protocol HistoryLocalDataStoreProtocol: Sendable {
 }
 
 // MARK: - HistoryLocalDataStore
-@HistoryLocalDataStoreActor
-final class HistoryLocalDataStore {
-    static let shared: HistoryLocalDataStoreProtocol = HistoryLocalDataStore()
+actor HistoryLocalDataStore {
     private var modelContainer: ModelContainer?
     private var modelContext: ModelContext?
-
-    private init() { initManger() }
-    private func initManger() {
-        do {
-            let schema = Schema([BrowserHistoryEntry.self])
-            let config = ModelConfiguration(isStoredInMemoryOnly: false)
-            let modelContainer = try ModelContainer(for: schema, configurations: [config])
-            let modelContext = ModelContext(modelContainer)
-
-            self.modelContainer = modelContainer
-            self.modelContext = modelContext
-        } catch {
-            print("Failed to create HistoryStore: \(error)")
-        }
-    }
 }
 
-// MARK: - HistoryLocalDataStoreProtocol Impl
+// MARK: - HistoryLocalDataStoreProtocol Implementation
 extension HistoryLocalDataStore: HistoryLocalDataStoreProtocol {
+    func initLocalDataStore() throws {
+        let schema = Schema([BrowserHistoryEntry.self])
+        let config = ModelConfiguration(isStoredInMemoryOnly: false)
+        let modelContainer = try ModelContainer(for: schema, configurations: [config])
+        let modelContext = ModelContext(modelContainer)
+
+        self.modelContainer = modelContainer
+        self.modelContext = modelContext
+    }
+
     func fetch(
         with descriptor: FetchDescriptor<BrowserHistoryEntry>,
         batchSize: Int
