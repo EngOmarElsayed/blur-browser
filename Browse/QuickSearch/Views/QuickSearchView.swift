@@ -54,6 +54,11 @@ struct QuickSearchView: View {
         }
         .frame(width: Layout.quickSearchWidth)
         .background(Color(nsColor: Colors.surfacePrimary))
+        .overlay(content: {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(lineWidth: 2)
+                .foregroundStyle(Color(Colors.accentPrimary))
+        })
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .onAppear { textFiledFocus = true }
         .frame(maxHeight: .infinity, alignment: .top)

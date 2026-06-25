@@ -124,7 +124,7 @@ private final class BlockingDimView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.20).cgColor
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.30).cgColor
     }
 
     @available(*, unavailable)
