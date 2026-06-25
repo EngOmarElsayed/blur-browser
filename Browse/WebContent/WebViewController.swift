@@ -8,9 +8,8 @@ import FactoryKit
 final class WebViewController: NSViewController {
     @Injected(\.addNewEntryInHistoryUseCase) private var addNewEntryInHistoryUseCase
     @Injected(\.tabManager) private var tabManager
+    @Injected(\.passwordStore) private var passwordStore
     private let coordinator = WebViewCoordinator()
-    private let passwordStore: PasswordStore
-    private let blocklistStore: BlocklistStore
     private(set) var passwordCoordinator: PasswordManagerCoordinator?
     private var currentWebView: WKWebView?
     private var findBar: FindInPageBar?
@@ -23,16 +22,10 @@ final class WebViewController: NSViewController {
     /// Called when a finished page has been checked for reader-mode availability.
     var onReaderAvailabilityChanged: ((Bool) -> Void)?
 
-    init(passwordStore: PasswordStore,
-         blocklistStore: BlocklistStore) {
-        self.passwordStore = passwordStore
-        self.blocklistStore = blocklistStore
+    init() {
         super.init(nibName: nil, bundle: nil)
         coordinator.viewController = self
-        let pmCoordinator = PasswordManagerCoordinator(
-            passwordStore: passwordStore,
-            blocklistStore: blocklistStore
-        )
+        let pmCoordinator = PasswordManagerCoordinator()
         self.passwordCoordinator = pmCoordinator
         observePasswordCoordinator()
 

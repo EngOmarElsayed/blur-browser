@@ -7,11 +7,8 @@ import FactoryKit
 final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     @Injected(\.privacyReportStore) private var privacyReportStore
     @Injected(\.tabManager) var tabManager
-    let historyStore = HistoryStore()
-    let downloadStore = DownloadStore()
-    let passwordStore = PasswordStore()
-    let blocklistStore = BlocklistStore()
-    private(set) var downloadManager: DownloadManager!
+    @Injected(\.downloadStore) private var downloadStore
+    @Injected(\.downloadManager) var downloadManager
 
     private var splitVC: MainSplitViewController!
     private var quickSearchOverlay: QuickSearchOverlay?
@@ -47,15 +44,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         // per window-controller setup, idempotent.
         Task { await privacyReportStore.refresh() }
 
-        downloadManager = DownloadManager(store: downloadStore)
-
-        splitVC = MainSplitViewController(
-            historyStore: historyStore,
-            downloadStore: downloadStore,
-            downloadManager: downloadManager,
-            passwordStore: passwordStore,
-            blocklistStore: blocklistStore
-        )
+        splitVC = MainSplitViewController()
         splitVC.webViewController.onNewTabRequested = { [weak self] url in
             self?.tabManager.addNewTab(url: url)
         }

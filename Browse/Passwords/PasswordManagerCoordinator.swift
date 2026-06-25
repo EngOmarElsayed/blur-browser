@@ -2,6 +2,7 @@ import AppKit
 import Observation
 import WebKit
 import os
+import FactoryKit
 
 @MainActor
 @Observable
@@ -24,8 +25,8 @@ final class PasswordManagerCoordinator: NSObject {
     }
 
     private let log = Logger(subsystem: "com.browse.app", category: "PasswordManager")
-    private let passwordStore: PasswordStore
-    private let blocklistStore: BlocklistStore
+    @ObservationIgnored @Injected(\.passwordStore) private var passwordStore
+    @ObservationIgnored @Injected(\.blocklistStore) private var blocklistStore
     weak var webView: WKWebView?
 
     /// unitId -> snapshot. Includes the URL captured at submission time so the
@@ -57,9 +58,7 @@ final class PasswordManagerCoordinator: NSObject {
     private var savePauseTime: Date?
     private var saveTimer: Task<Void, Never>?
 
-    init(passwordStore: PasswordStore, blocklistStore: BlocklistStore) {
-        self.passwordStore = passwordStore
-        self.blocklistStore = blocklistStore
+    override init() {
         super.init()
     }
 
