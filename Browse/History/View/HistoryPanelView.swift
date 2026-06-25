@@ -10,8 +10,8 @@ struct HistoryPanelView: View {
         if searchText.isEmpty {
             return historyStore.groupedEntries
         } else {
-            let results = historyStore.search(query: searchText)
-            return results.isEmpty ? [] : [HistoryStore.GroupedHistory(id: "search", label: "Results", entries: results)]
+//            let results = historyStore.search(query: searchText)
+            return []
         }
     }
 
@@ -137,7 +137,7 @@ struct HistoryPanelView: View {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(entry.url, forType: .string)
             }
-            Button("Delete") { historyStore.deleteEntry(entry) }
+            Button("Delete") { /*historyStore.deleteEntry(entry)*/ }
         }
     }
 

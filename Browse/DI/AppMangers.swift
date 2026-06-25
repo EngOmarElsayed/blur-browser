@@ -17,4 +17,9 @@ extension Container {
     var historyStore: Factory<HistoryStoreProtocol> {
         Factory(self) { HistoryStore() }
     }
+
+    @MainActor
+    var tabManager: Factory<TabManager> {
+        Factory(self) { TabManager() }.singleton
+    }
 }

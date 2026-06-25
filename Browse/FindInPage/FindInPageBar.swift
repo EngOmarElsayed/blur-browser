@@ -35,8 +35,8 @@ final class FindInPageBar: NSView {
     private func setup() {
         wantsLayer = true
         layer?.backgroundColor = Colors.surfacePrimary.cgColor
-        layer?.borderColor = Colors.borderLight.cgColor
-        layer?.borderWidth = 1
+        layer?.borderColor = Colors.accentPrimary.cgColor
+        layer?.borderWidth = 1.5
         layer?.cornerRadius = 12
 
         // Drop shadow

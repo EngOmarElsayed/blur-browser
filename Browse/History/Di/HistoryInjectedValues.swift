@@ -16,4 +16,20 @@ extension Container {
     var historyRepository: Factory<HistoryRepositoryProtocol> {
         Factory(self) { HistoryRepository() }
     }
+
+    var addNewEntryInHistoryUseCase: Factory<AddNewEntryInHistoryUseCaseProtocol> {
+        Factory(self) { AddNewEntryInHistoryUseCase() }
+    }
+
+    var deleteHistoryEntryUseCase: Factory<DeleteHistoryEntryUseCaseProtocol> {
+        Factory(self) { DeleteHistoryEntryUseCase() }
+    }
+
+    var deleteAllHistoryEntryUseCase: Factory<DeleteAllHistoryEntryUseCaseProtocol> {
+        Factory(self) { DeleteAllHistoryEntryUseCase() }
+    }
+
+    var fetchHistoryWithPredictUseCase: Factory<FetchHistoryWithPredictUseCaseProtocol> {
+        Factory(self) { FetchHistoryWithPredictUseCase() }
+    }
 }

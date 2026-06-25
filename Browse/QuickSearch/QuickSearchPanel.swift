@@ -1,3 +1,10 @@
+//
+//  QuickSearchOverlay.swift
+//  Blur-Browser
+//
+//  Created by Omar Elsayed on 25/06/2026.
+//
+
 import AppKit
 import SwiftUI
 
@@ -6,21 +13,15 @@ import SwiftUI
 final class QuickSearchOverlay {
     private var hostingView: NSHostingView<QuickSearchView>?
     private var dimmingView: BlockingDimView?
-    private let viewModel: QuickSearchViewModel
+    private let viewModel: QuickSearchViewModel = QuickSearchViewModel()
     private var keyMonitor: Any?
 
     var isVisible: Bool { hostingView != nil }
 
-    init(tabManager: TabManager, historyStore: HistoryStore) {
-        self.viewModel = QuickSearchViewModel(tabManager: tabManager, historyStore: historyStore)
-    }
-
-    func show(in parent: NSView, navigateInNewTab: Bool = false) {
+    func show(in parent: NSView, navigateInNewTab: Bool = false, url: String? = nil) {
         guard hostingView == nil else { return }
-
-        viewModel.searchText = ""
+        viewModel.searchText = url == nil ? "": url!
         viewModel.navigateInNewTab = navigateInNewTab
-        viewModel.updateResults()
 
         // Dimming backdrop — blocks all interaction with views underneath
         let dimming = BlockingDimView(frame: parent.bounds)
@@ -37,14 +38,11 @@ final class QuickSearchOverlay {
         let searchView = QuickSearchView(viewModel: viewModel) { [weak self] in
             self?.dismiss()
         }
+
         let hosting = NSHostingView(rootView: searchView)
         hosting.wantsLayer = true
         hosting.layer?.cornerRadius = 12
         hosting.layer?.masksToBounds = true
-        hosting.layer?.shadowColor = NSColor.black.withAlphaComponent(0.2).cgColor
-        hosting.layer?.shadowOffset = CGSize(width: 0, height: -4)
-        hosting.layer?.shadowRadius = 20
-        hosting.layer?.shadowOpacity = 1
 
         parent.addSubview(hosting)
         self.hostingView = hosting
@@ -75,6 +73,7 @@ final class QuickSearchOverlay {
     }
 
     func dismiss() {
+        viewModel.restViewModel()
         hostingView?.removeFromSuperview()
         hostingView = nil
         dimmingView?.removeFromSuperview()
@@ -85,11 +84,11 @@ final class QuickSearchOverlay {
         }
     }
 
-    func toggle(in parent: NSView, navigateInNewTab: Bool = false) {
+    func toggle(in parent: NSView, navigateInNewTab: Bool = false, url: String? = nil) {
         if isVisible {
             dismiss()
         } else {
-            show(in: parent, navigateInNewTab: navigateInNewTab)
+            show(in: parent, navigateInNewTab: navigateInNewTab, url: url)
         }
     }
 

@@ -37,7 +37,7 @@ struct HistorySidebarView: View {
                         : [HistoryStore.GroupedHistory(
                             id: "search",
                             label: "Results",
-                            entries: historyStore.search(query: searchText)
+                            entries: []
                           )]
 
                     ForEach(groups) { group in
@@ -94,7 +94,7 @@ struct HistorySidebarView: View {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(entry.url, forType: .string)
             }
-            Button("Delete") { historyStore.deleteEntry(entry) }
+            Button("Delete") { /*historyStore.deleteEntry(entry)*/ }
         }
     }
 

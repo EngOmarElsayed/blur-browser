@@ -69,53 +69,6 @@ final class HistoryStore {
 
 // MARK: - HistoryStoreProtocol
 extension HistoryStore: HistoryStoreProtocol {
-    func addEntry(url: URL, title: String, faviconURL: String? = nil) {
-        guard let ctx = modelContext else { return }
-        let entry = BrowserHistoryEntry(
-            url: url.absoluteString,
-            title: title,
-            faviconURL: faviconURL
-        )
-        ctx.insert(entry)
-        try? ctx.save()
-        fetchEntries()
-    }
-
-    func deleteEntry(_ entry: BrowserHistoryEntry) {
-        guard let ctx = modelContext else { return }
-        ctx.delete(entry)
-        try? ctx.save()
-        fetchEntries()
-    }
-
-    func clearHistory(olderThan date: Date? = nil) {
-        guard let ctx = modelContext else { return }
-        let descriptor: FetchDescriptor<BrowserHistoryEntry>
-        if let date {
-            descriptor = FetchDescriptor<BrowserHistoryEntry>(
-                predicate: #Predicate { $0.timestamp < date }
-            )
-        } else {
-            descriptor = FetchDescriptor<BrowserHistoryEntry>()
-        }
-        if let results = try? ctx.fetch(descriptor) {
-            for entry in results {
-                ctx.delete(entry)
-            }
-            try? ctx.save()
-        }
-        fetchEntries()
-    }
-
-    func search(query: String) -> [BrowserHistoryEntry] {
-        guard !query.isEmpty else { return entries }
-        let lowered = query.lowercased()
-        return entries.filter {
-            $0.title.lowercased().contains(lowered) ||
-            $0.url.lowercased().contains(lowered)
-        }
-    }
-
     /// Distinct hosts visited since `date`, lowercased. Used by the privacy
     /// report widget — combined with ITP records to compute the "% of sites
     /// that contacted trackers" denominator.

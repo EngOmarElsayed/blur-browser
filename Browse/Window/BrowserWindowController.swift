@@ -6,7 +6,7 @@ import FactoryKit
 @MainActor
 final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     @Injected(\.privacyReportStore) private var privacyReportStore
-    let tabManager = TabManager()
+    @Injected(\.tabManager) var tabManager
     let historyStore = HistoryStore()
     let downloadStore = DownloadStore()
     let passwordStore = PasswordStore()
@@ -60,14 +60,14 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         splitVC.webViewController.onNewTabRequested = { [weak self] url in
             self?.tabManager.addNewTab(url: url)
         }
-        splitVC.webViewController.setHistoryStore(historyStore)
+
         // DownloadManager needs the WebViewController to present the confirmation alert
         downloadManager.webViewController = splitVC.webViewController
         // WebViewController needs to know the DownloadManager so WebViewCoordinator can hand off
         splitVC.webViewController.setDownloadManager(downloadManager)
 
         // Create the quick search overlay and hand it to the web view controller
-        let overlay = QuickSearchOverlay(tabManager: tabManager, historyStore: historyStore)
+        let overlay = QuickSearchOverlay()
         quickSearchOverlay = overlay
         splitVC.webViewController.setQuickSearchOverlay(overlay)
 
@@ -177,8 +177,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
 
     // MARK: - Actions forwarded from AppDelegate
 
-    func openQuickSearch() {
-        splitVC.webViewController.toggleQuickSearch()
+    func openQuickSearch(url: String? = nil) {
+        splitVC.webViewController.toggleQuickSearch(url: url)
     }
 
     func newTabAndSearch() {

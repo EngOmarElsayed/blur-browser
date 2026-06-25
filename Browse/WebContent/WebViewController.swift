@@ -2,10 +2,11 @@ import AppKit
 import LocalAuthentication
 import SwiftUI
 import WebKit
+import FactoryKit
 
 @MainActor
 final class WebViewController: NSViewController {
-
+    @Injected(\.addNewEntryInHistoryUseCase) private var addNewEntryInHistoryUseCase
     private let tabManager: TabManager
     private let coordinator = WebViewCoordinator()
     private let passwordStore: PasswordStore
@@ -14,7 +15,6 @@ final class WebViewController: NSViewController {
     private var currentWebView: WKWebView?
     private var findBar: FindInPageBar?
     private var findController: FindInPageController?
-    private var historyStore: HistoryStore?
     private var quickSearchOverlay: QuickSearchOverlay?
     private var errorPageHosting: NSHostingController<ErrorPageView>?
 
@@ -83,10 +83,6 @@ final class WebViewController: NSViewController {
         super.viewDidLayout()
         layoutCurrentWebView()
         quickSearchOverlay?.layoutInParent(view)
-    }
-
-    func setHistoryStore(_ store: HistoryStore) {
-        self.historyStore = store
     }
 
     func setQuickSearchOverlay(_ overlay: QuickSearchOverlay) {
@@ -542,9 +538,12 @@ final class WebViewController: NSViewController {
 
     func onNavigationFinished() {
         guard let tab = tabManager.selectedTab, let url = tab.url else { return }
-        // Don't record internal pages (new-tab page, etc.) in browsing history.
-        if url.scheme != "blur" {
-            historyStore?.addEntry(url: url, title: tab.title)
+        Task {
+            try? await addNewEntryInHistoryUseCase(
+                title: tab.title,
+                url: url,
+                faviconUrl: tab.faviconURL
+            )
         }
 
         // Check if this page can be displayed in reader mode
@@ -616,9 +615,9 @@ final class WebViewController: NSViewController {
 
     // MARK: - Quick Search
 
-    func toggleQuickSearch() {
+    func toggleQuickSearch(url: String? = nil) {
         guard let overlay = quickSearchOverlay else { return }
-        overlay.toggle(in: view, navigateInNewTab: false)
+        overlay.toggle(in: view, navigateInNewTab: false, url: url)
     }
 
     func showQuickSearch(navigateInNewTab: Bool) {
@@ -807,7 +806,7 @@ final class WebViewController: NSViewController {
         let vPadding: CGFloat = 8
         let barWidth: CGFloat = 400
         fb.frame = NSRect(
-            x: (view.bounds.width - barWidth) / 2,
+            x: (view.bounds.width - barWidth) - 10,
             y: view.bounds.height - h - vPadding,
             width: barWidth,
             height: h

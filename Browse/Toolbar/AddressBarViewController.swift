@@ -344,7 +344,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
     // MARK: - Actions
     @objc func handleUrlContainerMousClick(_ gesture: NSClickGestureRecognizer) {
         guard let wc = NSApp.keyWindow?.windowController as? BrowserWindowController else { return }
-        wc.openQuickSearch()
+        wc.openQuickSearch(url: urlField.stringValue)
     }
 
     @objc private func goBack() {
