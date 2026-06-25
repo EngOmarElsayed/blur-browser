@@ -196,7 +196,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func focusAndSelectURLBar() {
-        splitVC.addressBar.focusAndSelectAll()
+        splitVC.webViewController.toggleQuickSearch(url: tabManager.selectedTab?.displayURL)
     }
 
     func openFile() {

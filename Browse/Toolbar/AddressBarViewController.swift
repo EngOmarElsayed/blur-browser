@@ -83,7 +83,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate, NSG
         // URL text field — always dark since the URL bar is always white
         urlField.isBordered = false
         urlField.isEditable = false
-        urlField.isSelectable = true
+        urlField.isSelectable = false
         urlField.drawsBackground = false
         urlField.font = .systemFont(ofSize: Typography.bodySize)
         urlField.textColor = Colors.accentPrimary
