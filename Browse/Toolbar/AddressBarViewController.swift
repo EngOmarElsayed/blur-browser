@@ -1,8 +1,7 @@
 import AppKit
 
 @MainActor
-final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
-
+final class AddressBarViewController: NSViewController, NSTextFieldDelegate, NSGestureRecognizerDelegate {
     private let tabManager: TabManager
     private let sidebarToggleButton = NSButton()
     private let backButton = NSButton()
@@ -68,6 +67,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
 
         // URL field container — rounded pill
         let clickGesture = NSClickGestureRecognizer(target: self, action: #selector(handleUrlContainerMousClick))
+        clickGesture.delegate = self
         urlContainer.wantsLayer = true
         urlContainer.layer?.backgroundColor = Colors.surfacePrimary.cgColor
         urlContainer.layer?.borderColor = Colors.accentPrimary.cgColor
@@ -90,7 +90,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         urlField.placeholderString = "Search or enter URL..."
         urlField.focusRingType = .none
         urlField.delegate = self
-        urlField.cell?.isScrollable = true
+        urlField.cell?.isScrollable = false
         urlField.cell?.lineBreakMode = .byTruncatingTail
 
         // Right-side buttons
@@ -241,10 +241,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
         readerButton.target = self
         readerButton.action = #selector(toggleReaderMode)
         readerButton.wantsLayer = true
-        readerButton.layer?.shadowColor = NSColor.black.withAlphaComponent(0.12).cgColor
-        readerButton.layer?.shadowOffset = CGSize(width: 0, height: -1)
-        readerButton.layer?.shadowRadius = 3
-        readerButton.layer?.shadowOpacity = 1
+        readerButton.layer?.backgroundColor = Colors.surfacePrimary.cgColor
         readerButton.isHidden = true
     }
 
@@ -339,6 +336,13 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate {
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             progressWidthConstraint.animator().constant = targetWidth
         }
+    }
+
+    // MARK: - NSGestureRecognizerDelegate
+    func gestureRecognizer(_ gestureRecognizer: NSGestureRecognizer, shouldAttemptToRecognizeWith event: NSEvent) -> Bool {
+        guard !readerButton.isHidden else { return true }
+        let pointInContainer = urlContainer.convert(event.locationInWindow, from: nil)
+        return !readerButton.frame.contains(pointInContainer)
     }
 
     // MARK: - Actions

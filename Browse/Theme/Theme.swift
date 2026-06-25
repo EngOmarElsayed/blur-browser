@@ -59,7 +59,7 @@ extension Theme {
             mood: "Ink-blue darkness with a soft indigo glow",
             chromeHex: "#1C1E2A",
             foregroundHex: "#E2E4EA",
-            accentHex: "#818CF8",
+            accentHex: "#5E67B8",
             borderHex: "#3A3D50",
             wallpaperNames: [
                 "blue-stars-phone-wallepaper",

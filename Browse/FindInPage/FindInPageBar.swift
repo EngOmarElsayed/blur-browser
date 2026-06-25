@@ -49,13 +49,13 @@ final class FindInPageBar: NSView {
         // Search icon
         let searchIcon = NSImageView()
         searchIcon.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: "Search")
-        searchIcon.contentTintColor = Colors.foregroundMuted
+        searchIcon.contentTintColor = Colors.accentPrimary
 
         // Search field
         searchField.isBordered = false
         searchField.drawsBackground = false
         searchField.font = .systemFont(ofSize: Typography.bodySize)
-        searchField.textColor = Colors.foregroundPrimary
+        searchField.textColor = Colors.accentPrimary
         searchField.placeholderString = "Find in page..."
         searchField.focusRingType = .none
         searchField.delegate = self
@@ -63,7 +63,7 @@ final class FindInPageBar: NSView {
 
         // Match label
         matchLabel.font = .systemFont(ofSize: Typography.smallSize)
-        matchLabel.textColor = Colors.foregroundMuted
+        matchLabel.textColor = .black
 
         // Nav buttons
         configureButton(prevButton, symbol: "chevron.up", action: #selector(findPrevious))
@@ -112,7 +112,7 @@ final class FindInPageBar: NSView {
     private func configureButton(_ button: NSButton, symbol: String, action: Selector) {
         button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
         button.isBordered = false
-        button.contentTintColor = Colors.foregroundMuted
+        button.contentTintColor = .black
         button.target = self
         button.action = action
     }
