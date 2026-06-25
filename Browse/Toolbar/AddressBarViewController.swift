@@ -1,8 +1,9 @@
 import AppKit
+import FactoryKit
 
 @MainActor
 final class AddressBarViewController: NSViewController, NSTextFieldDelegate, NSGestureRecognizerDelegate {
-    private let tabManager: TabManager
+    @Injected(\.tabManager) private var tabManager
     private let sidebarToggleButton = NSButton()
     private let backButton = NSButton()
     private let forwardButton = NSButton()
@@ -33,8 +34,7 @@ final class AddressBarViewController: NSViewController, NSTextFieldDelegate, NSG
     /// Called when the reader-mode button is tapped
     var onToggleReaderMode: (() -> Void)?
 
-    init(tabManager: TabManager) {
-        self.tabManager = tabManager
+    init() {
         super.init(nibName: nil, bundle: nil)
     }
 

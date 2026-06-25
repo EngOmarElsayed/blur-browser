@@ -1,10 +1,10 @@
 import AppKit
 import SwiftUI
+import FactoryKit
 
 @MainActor
 final class SidebarViewController: NSViewController {
-
-    private let tabManager: TabManager
+    @Injected(\.tabManager) private var tabManager
     private let historyStore: HistoryStore
     private let downloadStore: DownloadStore
     private let sidebarState = SidebarState()
@@ -37,8 +37,7 @@ final class SidebarViewController: NSViewController {
     /// Called when the user resumes a paused download from the sidebar
     var onResumeDownload: (UUID) -> Void = { _ in }
 
-    init(tabManager: TabManager, historyStore: HistoryStore, downloadStore: DownloadStore) {
-        self.tabManager = tabManager
+    init(historyStore: HistoryStore, downloadStore: DownloadStore) {
         self.historyStore = historyStore
         self.downloadStore = downloadStore
         super.init(nibName: nil, bundle: nil)

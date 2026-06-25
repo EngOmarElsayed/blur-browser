@@ -1,10 +1,11 @@
 import AppKit
 import SwiftUI
+import FactoryKit
 
 @MainActor
 final class MainSplitViewController: NSViewController {
 
-    let tabManager: TabManager
+    @Injected(\.tabManager) var tabManager
     let historyStore: HistoryStore
     let downloadStore: DownloadStore
     let downloadManager: DownloadManager
@@ -30,6 +31,10 @@ final class MainSplitViewController: NSViewController {
     private let sidebarToggleButton = NSButton()
     private let topHoverZone = HoverDetectorView()
     private var hideTimer: Timer?
+
+    private let leftHoverZone = HoverDetectorView()
+    private var sidebarHideTimer: Timer?
+    private var isSidebarTemporarilyShown = false
     private var readerOverlay: ReaderModeView?
     private var readerDimView: GaussianBlurView?
     private var readerDimTopConstraint: NSLayoutConstraint?
@@ -51,25 +56,22 @@ final class MainSplitViewController: NSViewController {
     private let readerBlurRadius: CGFloat = 8
 
     init(
-        tabManager: TabManager,
         historyStore: HistoryStore,
         downloadStore: DownloadStore,
         downloadManager: DownloadManager,
         passwordStore: PasswordStore,
         blocklistStore: BlocklistStore
     ) {
-        self.tabManager = tabManager
         self.historyStore = historyStore
         self.downloadStore = downloadStore
         self.downloadManager = downloadManager
         self.passwordStore = passwordStore
         self.blocklistStore = blocklistStore
         self.webViewController = WebViewController(
-            tabManager: tabManager,
             passwordStore: passwordStore,
             blocklistStore: blocklistStore
         )
-        self.addressBar = AddressBarViewController(tabManager: tabManager)
+        self.addressBar = AddressBarViewController()
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -113,7 +115,6 @@ final class MainSplitViewController: NSViewController {
 
         // -- Left sidebar --
         sidebarVC = SidebarViewController(
-            tabManager: tabManager,
             historyStore: historyStore,
             downloadStore: downloadStore
         )
@@ -177,6 +178,15 @@ final class MainSplitViewController: NSViewController {
         }
         view.addSubview(topHoverZone)
 
+        // -- Left hover zone for auto-revealing the sidebar as an overlay --
+        leftHoverZone.onMouseEntered = { [weak self] in
+            self?.handleLeftHoverEntered()
+        }
+        leftHoverZone.onMouseExited = { [weak self] in
+            self?.handleLeftHoverExited()
+        }
+        view.addSubview(leftHoverZone)
+
         // -- Arc-style border overlay (topmost, non-interactive) --
         view.addSubview(borderOverlay)
     }
@@ -198,18 +208,42 @@ final class MainSplitViewController: NSViewController {
         let topInset: CGFloat = view.safeAreaInsets.top
 
         // ── Left sidebar ──
+        // `effectiveSidebarWidth` drives the content layout and only reflects the
+        // *permanent* state — a temporary hover reveal must not push content over.
         let effectiveSidebarWidth = isSidebarCollapsed ? 0 : sidebarWidth
+
+        // The sidebar is visible when it's pinned open, or temporarily revealed
+        // by the left-edge hover while collapsed.
+        let isSidebarOverlaid = isSidebarCollapsed && isSidebarTemporarilyShown
+        let sidebarVisible = !isSidebarCollapsed || isSidebarTemporarilyShown
+        let sidebarFrameWidth = sidebarVisible ? sidebarWidth : 0
 
         sidebarVC.view.frame = NSRect(
             x: 0,
             y: chromeEdge,
-            width: effectiveSidebarWidth,
+            width: sidebarFrameWidth,
             height: bounds.height - chromeEdge - topInset
         )
-        sidebarVC.view.isHidden = isSidebarCollapsed
+        sidebarVC.view.isHidden = !sidebarVisible
+
+        // When overlaid, float above the content with a soft shadow so it reads
+        // as a panel sitting on top of the window rather than part of the layout.
+        if isSidebarOverlaid {
+            view.addSubview(sidebarVC.view, positioned: .above, relativeTo: contentContainerView)
+            sidebarVC.view.wantsLayer = true
+            sidebarVC.view.layer?.masksToBounds = false
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.25)
+            shadow.shadowBlurRadius = 16
+            shadow.shadowOffset = NSSize(width: 3, height: 0)
+            sidebarVC.view.shadow = shadow
+            sidebarVC.view.layer?.backgroundColor = Colors.chromeBg.cgColor
+            sidebarVC.view.layer?.cornerRadius = 16
+        } else {
+            sidebarVC.view.shadow = nil
+        }
 
         // Sidebar toggle button
-        let _: CGFloat = 28
         let trafficLightCenterY: CGFloat
         if let closeButton = view.window?.standardWindowButton(.closeButton) {
             let closeFrame = closeButton.convert(closeButton.bounds, to: view)
@@ -248,17 +282,6 @@ final class MainSplitViewController: NSViewController {
             height: bounds.height - chromeEdge
         )
 
-//        // Right divider
-//        rightDividerView.isHidden = isHistoryCollapsed
-//        if !isHistoryCollapsed {
-//            rightDividerView.frame = NSRect(
-//                x: bounds.width - effectiveHistoryWidth - chromeEdge - (dividerHitWidth - 1) / 2,
-//                y: chromeEdge, width: dividerHitWidth,
-//                height: bounds.height - chromeEdge
-//            )
-//            view.addSubview(rightDividerView, positioned: .above, relativeTo: historyHostingVC.view)
-//        }
-
         // ── Content container (toolbar + web view) ──
         let contentRight = isHistoryCollapsed ? chromeEdge : effectiveHistoryWidth + chromeEdge + 1
         let fullContentWidth = bounds.width - contentX - contentRight
@@ -290,6 +313,18 @@ final class MainSplitViewController: NSViewController {
         // Only active when the address bar is permanently hidden and not temporarily shown
         topHoverZone.isHidden = !isAddressBarHidden || isAddressBarTemporarilyShown
         view.addSubview(topHoverZone, positioned: .above, relativeTo: borderOverlay)
+
+        // Left hover zone — invisible vertical strip on the left edge to detect mouse
+        let leftHoverZoneWidth: CGFloat = 8
+        leftHoverZone.frame = NSRect(
+            x: 0,
+            y: chromeEdge,
+            width: leftHoverZoneWidth,
+            height: bounds.height - chromeEdge - topInset
+        )
+        // Only active when the sidebar is collapsed and not already overlaid
+        leftHoverZone.isHidden = !isSidebarCollapsed || isSidebarTemporarilyShown
+        view.addSubview(leftHoverZone, positioned: .above, relativeTo: borderOverlay)
         toolbarView.frame = NSRect(
             x: 0,
             y: containerHeight - toolbarHeight,
@@ -435,6 +470,54 @@ final class MainSplitViewController: NSViewController {
             ctx.duration = 0.2
             ctx.allowsImplicitAnimation = true
             isAddressBarTemporarilyShown = false
+            layoutSubviews()
+        }
+    }
+
+    // MARK: - Left Hover Auto-Reveal
+
+    private func handleLeftHoverEntered() {
+        guard isSidebarCollapsed, !isSidebarTemporarilyShown else { return }
+        sidebarHideTimer?.invalidate()
+        sidebarHideTimer = nil
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.allowsImplicitAnimation = true
+            isSidebarTemporarilyShown = true
+            layoutSubviews()
+        }
+    }
+
+    private func handleLeftHoverExited() {
+        guard isSidebarTemporarilyShown else { return }
+        sidebarHideTimer?.invalidate()
+        sidebarHideTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.dismissTemporarySidebar()
+            }
+        }
+    }
+
+    private func dismissTemporarySidebar() {
+        guard isSidebarTemporarilyShown else { return }
+        if let window = view.window {
+            let mouseInWindow = window.mouseLocationOutsideOfEventStream
+            let mouseInView = view.convert(mouseInWindow, from: nil)
+            if sidebarVC.view.frame.contains(mouseInView) {
+                sidebarHideTimer?.invalidate()
+                sidebarHideTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        self?.dismissTemporarySidebar()
+                    }
+                }
+                return
+            }
+        }
+
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.allowsImplicitAnimation = true
+            isSidebarTemporarilyShown = false
             layoutSubviews()
         }
     }

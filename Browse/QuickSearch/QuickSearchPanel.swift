@@ -31,6 +31,7 @@ final class QuickSearchOverlay {
         dimming.layer?.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
         dimming.layer?.masksToBounds = true
         dimming.layer?.cornerRadius = 16
+        dimming.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.30).cgColor
         parent.addSubview(dimming)
         self.dimmingView = dimming
 
@@ -112,39 +113,5 @@ final class QuickSearchOverlay {
         // existing siblings, so re-adding in order re-asserts z-order.
         parent.addSubview(dimming)
         parent.addSubview(hosting)
-    }
-}
-
-// MARK: - Blocking Dim View
-
-/// An NSView that intercepts ALL mouse events so nothing passes through to views underneath.
-private final class BlockingDimView: NSView {
-    var onClickOutside: (() -> Void)?
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        wantsLayer = true
-        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.30).cgColor
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError() }
-
-    override var acceptsFirstResponder: Bool { true }
-
-    override func mouseDown(with event: NSEvent) { onClickOutside?() }
-    override func mouseUp(with event: NSEvent) {}
-    override func mouseDragged(with event: NSEvent) {}
-    override func rightMouseDown(with event: NSEvent) { onClickOutside?() }
-    override func rightMouseUp(with event: NSEvent) {}
-    override func otherMouseDown(with event: NSEvent) { onClickOutside?() }
-    override func otherMouseUp(with event: NSEvent) {}
-    override func scrollWheel(with event: NSEvent) {}
-
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        if bounds.contains(convert(point, from: superview)) {
-            return self
-        }
-        return nil
     }
 }

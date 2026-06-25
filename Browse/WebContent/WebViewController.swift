@@ -7,7 +7,7 @@ import FactoryKit
 @MainActor
 final class WebViewController: NSViewController {
     @Injected(\.addNewEntryInHistoryUseCase) private var addNewEntryInHistoryUseCase
-    private let tabManager: TabManager
+    @Injected(\.tabManager) private var tabManager
     private let coordinator = WebViewCoordinator()
     private let passwordStore: PasswordStore
     private let blocklistStore: BlocklistStore
@@ -23,10 +23,8 @@ final class WebViewController: NSViewController {
     /// Called when a finished page has been checked for reader-mode availability.
     var onReaderAvailabilityChanged: ((Bool) -> Void)?
 
-    init(tabManager: TabManager,
-         passwordStore: PasswordStore,
+    init(passwordStore: PasswordStore,
          blocklistStore: BlocklistStore) {
-        self.tabManager = tabManager
         self.passwordStore = passwordStore
         self.blocklistStore = blocklistStore
         super.init(nibName: nil, bundle: nil)

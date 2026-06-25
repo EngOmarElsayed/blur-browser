@@ -50,7 +50,6 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         downloadManager = DownloadManager(store: downloadStore)
 
         splitVC = MainSplitViewController(
-            tabManager: tabManager,
             historyStore: historyStore,
             downloadStore: downloadStore,
             downloadManager: downloadManager,
