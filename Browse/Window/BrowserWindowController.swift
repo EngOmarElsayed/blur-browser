@@ -6,9 +6,13 @@ import FactoryKit
 @MainActor
 final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     @Injected(\.privacyReportStore) private var privacyReportStore
-    @Injected(\.tabManager) var tabManager
     @Injected(\.downloadStore) private var downloadStore
     @Injected(\.downloadManager) var downloadManager
+
+    /// One TabManager per window — the window owns it and passes it down to the
+    /// split view controller and its children. This is what isolates tab state
+    /// between separate BrowserWindow instances.
+    let tabManager = TabManager()
 
     private var splitVC: MainSplitViewController!
     private var quickSearchOverlay: QuickSearchOverlay?
@@ -44,7 +48,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         // per window-controller setup, idempotent.
         Task { await privacyReportStore.refresh() }
 
-        splitVC = MainSplitViewController()
+        splitVC = MainSplitViewController(tabManager: tabManager)
         splitVC.webViewController.onNewTabRequested = { [weak self] url in
             self?.tabManager.addNewTab(url: url)
         }
@@ -55,7 +59,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         splitVC.webViewController.setDownloadManager(downloadManager)
 
         // Create the quick search overlay and hand it to the web view controller
-        let overlay = QuickSearchOverlay()
+        let overlay = QuickSearchOverlay(tabManager: tabManager)
         quickSearchOverlay = overlay
         splitVC.webViewController.setQuickSearchOverlay(overlay)
 

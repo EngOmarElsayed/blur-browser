@@ -33,9 +33,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if !flag {
+        guard flag == false else { return true }
+        if let wc = windowController, wc.window != nil {
+            wc.showWindow(nil)
+            wc.window?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        } else {
             openNewWindow()
         }
+
         return true
     }
 

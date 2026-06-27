@@ -20,7 +20,11 @@ final class QuickSearchViewModel {
 
     private var suggestTask: Task<Void, Never>?
     @ObservationIgnored @Injected(\.fetchHistoryWithPredictUseCase) private var fetchHistoryWithPredictUseCase
-    @ObservationIgnored @Injected(\.tabManager) private var tabManager
+    @ObservationIgnored private let tabManager: TabManager
+
+    init(tabManager: TabManager) {
+        self.tabManager = tabManager
+    }
 
     var selectedResult: QuickSearchResult? {
         guard let id = selectedID else { return nil }

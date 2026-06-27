@@ -19,11 +19,6 @@ extension Container {
     }
 
     @MainActor
-    var tabManager: Factory<TabManager> {
-        Factory(self) { TabManager() }.singleton
-    }
-
-    @MainActor
     var downloadStore: Factory<DownloadStore> {
         Factory(self) { DownloadStore() }.singleton
     }

@@ -13,10 +13,14 @@ import SwiftUI
 final class QuickSearchOverlay {
     private var hostingView: NSHostingView<QuickSearchView>?
     private var dimmingView: BlockingDimView?
-    private let viewModel: QuickSearchViewModel = QuickSearchViewModel()
+    private let viewModel: QuickSearchViewModel
     private var keyMonitor: Any?
 
     var isVisible: Bool { hostingView != nil }
+
+    init(tabManager: TabManager) {
+        self.viewModel = QuickSearchViewModel(tabManager: tabManager)
+    }
 
     func show(in parent: NSView, navigateInNewTab: Bool = false, url: String? = nil) {
         guard hostingView == nil else { return }

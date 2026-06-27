@@ -5,7 +5,7 @@ import FactoryKit
 @MainActor
 final class MainSplitViewController: NSViewController {
 
-    @Injected(\.tabManager) var tabManager
+    let tabManager: TabManager
     @Injected(\.historyStore) var historyStore
     @Injected(\.downloadStore) var downloadStore
     @Injected(\.downloadManager) var downloadManager
@@ -53,9 +53,10 @@ final class MainSplitViewController: NSViewController {
     /// Tune this to taste.
     private let readerBlurRadius: CGFloat = 8
 
-    init() {
-        self.webViewController = WebViewController()
-        self.addressBar = AddressBarViewController()
+    init(tabManager: TabManager) {
+        self.tabManager = tabManager
+        self.webViewController = WebViewController(tabManager: tabManager)
+        self.addressBar = AddressBarViewController(tabManager: tabManager)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -98,7 +99,7 @@ final class MainSplitViewController: NSViewController {
         contentContainerView.addSubview(webViewController.view)
 
         // -- Left sidebar --
-        sidebarVC = SidebarViewController()
+        sidebarVC = SidebarViewController(tabManager: tabManager)
         sidebarVC.onToggleHistory = { [weak self] in
             self?.toggleHistoryMode()
         }
