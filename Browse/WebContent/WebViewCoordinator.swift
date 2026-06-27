@@ -13,9 +13,9 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
     /// Register content filter message handlers on a web view's user content controller.
     /// Call this once per tab when the web view is first displayed.
     func registerMessageHandlers(on webView: WKWebView) {
-        unregisterMessageHandlers(on: webView)
-
         let ucc = webView.configuration.userContentController
+
+        // Fire-and-forget handlers (images, logs)
         ucc.add(self, name: "imageFound")
         ucc.add(self, name: "scanLog")
         ucc.add(self, name: "videoLog")

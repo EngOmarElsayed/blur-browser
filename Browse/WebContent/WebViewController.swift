@@ -127,7 +127,6 @@ final class WebViewController: NSViewController {
 
         // Register password manager message handler for the active tab.
         if let pmCoordinator = passwordCoordinator {
-            wv.configuration.userContentController.removeScriptMessageHandler(forName: "passwordManager")
             wv.configuration.userContentController.add(pmCoordinator, name: "passwordManager")
             pmCoordinator.webView = wv
         }
