@@ -8,6 +8,14 @@ struct AppearanceSettingsView: View {
         GridItem(.flexible(), spacing: 12)
     ]
 
+    private var gridPanelFill: Color {
+        Color(nsColor: themeStore.chromeColor).opacity(themeStore.isDark ? 0.28 : 0.10)
+    }
+
+    private var gridPanelBorder: Color {
+        Color(nsColor: themeStore.borderColor).opacity(themeStore.isDark ? 0.90 : 0.45)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -30,6 +38,15 @@ struct AppearanceSettingsView: View {
                         }
                     }
                 }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(gridPanelFill)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(gridPanelBorder, lineWidth: 1)
+                )
                 .padding(.top, 4)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -44,6 +61,27 @@ private struct ThemeCard: View {
     let isSelected: Bool
     let onSelect: () -> Void
 
+    @State private var themeStore = ThemeStore.shared
+
+    private var cardFill: Color {
+        Color(nsColor: themeStore.chromeColor).opacity(themeStore.isDark ? 0.62 : 0.20)
+    }
+
+    private var cardBorder: Color {
+        if isSelected {
+            return Color(nsColor: theme.accentColor)
+        }
+        return Color(nsColor: themeStore.borderColor).opacity(themeStore.isDark ? 0.92 : 0.55)
+    }
+
+    private var cardTitleColor: Color {
+        Color(nsColor: themeStore.foregroundColor)
+    }
+
+    private var cardSubtitleColor: Color {
+        Color(nsColor: themeStore.foregroundColor.withAlphaComponent(themeStore.isDark ? 0.74 : 0.58))
+    }
+
     var body: some View {
         Button(action: onSelect) {
             VStack(alignment: .leading, spacing: 0) {
@@ -52,21 +90,16 @@ private struct ThemeCard: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white)
+                    .fill(cardFill)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(
-                        isSelected
-                            ? Color(nsColor: theme.accentColor)
-                            : Color(hex: "#E5E7EB"),
-                        lineWidth: isSelected ? 2 : 1
-                    )
+                    .strokeBorder(cardBorder, lineWidth: isSelected ? 2 : 1)
             )
             .shadow(
                 color: isSelected
                     ? Color(nsColor: theme.accentColor).opacity(0.2)
-                    : Color.black.opacity(0.04),
+                    : Color.black.opacity(themeStore.isDark ? 0.20 : 0.04),
                 radius: isSelected ? 8 : 2,
                 x: 0, y: isSelected ? 4 : 1
             )
@@ -121,10 +154,10 @@ private struct ThemeCard: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(theme.displayName)
                 .font(.custom(Typography.fontFamily, size: 12).weight(.semibold))
-                .foregroundStyle(SettingsColors.fgPrimary)
+                .foregroundStyle(cardTitleColor)
             Text(theme.mood)
                 .font(.custom(Typography.fontFamily, size: 10))
-                .foregroundStyle(SettingsColors.fgSecondary)
+                .foregroundStyle(cardSubtitleColor)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }

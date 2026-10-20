@@ -21,16 +21,13 @@ final class SettingsWindowController: NSWindowController {
         // alone leaves the title bar draggable.
         window.isMovable = false
         window.isMovableByWindowBackground = false
-        window.backgroundColor = .clear
-        window.isOpaque = false
         window.center()
         window.isReleasedWhenClosed = false
         window.setContentSize(NSSize(width: 800, height: 500))
         window.minSize = NSSize(width: 800, height: 450)
         window.maxSize = NSSize(width: 800, height: 450)
 
-        // Hide the standard traffic light buttons — we draw our own
-        window.standardWindowButton(.closeButton)?.isHidden = true
+        // Native close button only — the window is fixed-size and pinned
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.zoomButton)?.isHidden = true
 
@@ -47,6 +44,11 @@ final class SettingsWindowController: NSWindowController {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
+
+    func showSettings(tab: SettingsTab) {
+        SettingsRouter.shared.selectedTab = tab
+        showSettings()
+    }
 
     func showSettings() {
         centerOverActiveBrowserWindow()

@@ -18,60 +18,74 @@ struct SidebarButtons: View {
     }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Button {
+        HStack(spacing: 2) {
+            FooterButton(symbol: "square.stack", help: "Tabs", isActive: tabAreaMode == .tabs) {
                 tabAreaMode = .tabs
-            } label: {
-                Image(systemName: "house")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-                    .opacity(tabAreaMode == .tabs ? 0.8 : 1)
             }
-            .buttonStyle(.plain)
-            .disabled(tabAreaMode == .tabs)
-            .help("Back to Tabs")
 
-            Button {
+            FooterButton(symbol: "arrow.down.circle", help: "Downloads", isActive: tabAreaMode == .downloads) {
                 tabAreaMode = .downloads
-            } label: {
-                Image(systemName: "arrow.down.circle")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-                    .opacity(tabAreaMode == .downloads ? 0.8 : 1)
-                    .overlay(alignment: .topTrailing) {
-                        if activeDownloadCount > 0 {
-                            DownloadsBadge(count: activeDownloadCount)
-                                .offset(x: 8, y: -5)
-                        }
-                    }
             }
-            .buttonStyle(.plain)
-            .disabled(tabAreaMode == .downloads)
-            .help("Downloads")
+            .overlay(alignment: .topTrailing) {
+                if activeDownloadCount > 0 {
+                    DownloadsBadge(count: activeDownloadCount)
+                        .offset(x: -2, y: 2)
+                        .allowsHitTesting(false)
+                }
+            }
 
-            Button {
+            FooterButton(symbol: "clock.arrow.circlepath", help: "History") {
                 onToggleHistory?()
-            } label: {
-                Image(systemName: "clock")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
             }
-            .buttonStyle(.plain)
 
             ThemePaletteAnchorButton()
+                .frame(width: 30, height: 30)
                 .help("Change Theme")
                 .accessibilityLabel("Change theme")
 
-            Button {
+            FooterButton(symbol: "gearshape", help: "Settings") {
                 SettingsWindowController.shared.showSettings()
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
             }
-            .buttonStyle(.plain)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(3)
+        .glassEffect(.regular, in: Capsule())
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+}
+
+// MARK: - Footer Button
+
+private struct FooterButton: View {
+    let symbol: String
+    let help: String
+    var isActive: Bool = false
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color(nsColor: isActive ? Colors.accentPrimary : Colors.foregroundSecondary))
+                .frame(width: 30, height: 30)
+                .background {
+                    if isActive || isHovered {
+                        Circle().fill(
+                            isActive
+                                ? Color(nsColor: Colors.accentPrimary).opacity(0.16)
+                                : Color(nsColor: Colors.foregroundPrimary).opacity(0.08)
+                        )
+                    }
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .animation(.smooth(duration: 0.15), value: isHovered)
+        .help(help)
+        .accessibilityLabel(help)
+        .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
 
@@ -87,7 +101,8 @@ private struct ThemePaletteAnchorButton: NSViewRepresentable {
         button.isBordered = false
         button.bezelStyle = .regularSquare
         button.image = NSImage(systemSymbolName: "paintpalette", accessibilityDescription: "Change theme")
-        button.contentTintColor = Colors.foregroundMuted
+        button.symbolConfiguration = .init(pointSize: 13, weight: .medium)
+        button.contentTintColor = Colors.foregroundSecondary
         button.imagePosition = .imageOnly
         button.target = context.coordinator
         button.action = #selector(Coordinator.tapped(_:))
@@ -98,7 +113,7 @@ private struct ThemePaletteAnchorButton: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSButton, context: Context) {
-        nsView.contentTintColor = Colors.foregroundMuted
+        nsView.contentTintColor = Colors.foregroundSecondary
     }
 
     func makeCoordinator() -> Coordinator {
@@ -120,16 +135,10 @@ private struct DownloadsBadge: View {
 
     var body: some View {
         Text(count > 9 ? "9+" : "\(count)")
-            .font(.system(size: 6, weight: .bold))
+            .font(.system(size: 8, weight: .bold).monospacedDigit())
             .foregroundStyle(.white)
-            .frame(minWidth: 12, minHeight: 12)
-            .padding(.horizontal, 3)
-            .background(
-                Circle().fill(Color(nsColor: Colors.accentPrimary))
-            )
-            .overlay(
-                Circle()
-                    .stroke(Color(nsColor: Colors.surfacePrimary), lineWidth: 1.5)
-            )
+            .frame(minWidth: 13, minHeight: 13)
+            .padding(.horizontal, 2)
+            .background(Capsule().fill(Color(nsColor: Colors.accentPrimary)))
     }
 }

@@ -5,27 +5,42 @@ import AppKit
 enum Colors {
     // MARK: - Theme-aware tokens (resolve through ThemeStore)
     @MainActor static var foregroundPrimary: NSColor   { ThemeStore.shared.foregroundColor }
-    @MainActor static var foregroundSecondary: NSColor { ThemeStore.shared.foregroundColor.withAlphaComponent(0.7) }
-    @MainActor static var foregroundMuted: NSColor     { ThemeStore.shared.foregroundColor.withAlphaComponent(0.55) }
+    // Secondary/muted alphas are tuned for legibility on the translucent glass
+    // chrome — anything lower washes out over bright desktops.
+    @MainActor static var foregroundSecondary: NSColor { ThemeStore.shared.foregroundColor.withAlphaComponent(0.82) }
+    @MainActor static var foregroundMuted: NSColor     { ThemeStore.shared.foregroundColor.withAlphaComponent(0.68) }
     @MainActor static var accentPrimary: NSColor       { ThemeStore.shared.accentColor }
     @MainActor static var borderLight: NSColor         { ThemeStore.shared.borderColor }
     @MainActor static var hoverBg: NSColor             { ThemeStore.shared.accentColor.withAlphaComponent(0.12) }
     @MainActor static var sidebarBg: NSColor           { ThemeStore.shared.chromeColor }
     @MainActor static var chromeBg: NSColor            { ThemeStore.shared.chromeColor }
+    /// Theme tint laid over the behind-window glass. Translucent so the desktop
+    /// reads through, opaque enough that each theme keeps its identity.
+    @MainActor static var chromeTint: NSColor          { ThemeStore.shared.chromeColor.withAlphaComponent(ThemeStore.shared.isDark ? 0.72 : 0.55) }
 
     // MARK: - Static (non-themed) tokens
     static let foregroundInverse = NSColor(hex: "#FFFFFF")
-    static let surfacePrimary    = NSColor(hex: "#FFFFFF")
-    static let surfaceSecondary  = NSColor(hex: "#F7F8FA")
     static let surfaceInverse    = NSColor(hex: "#0A0A0A")
+    /// Destructive / high-risk state (e.g. agent Dangerous mode).
+    static let danger            = NSColor(hex: "#EF4444")
 
-    // MARK: - Foreground on white surfaces
+    // MARK: - Surfaces (appearance-aware)
+    // Cards, popovers and settings panes. These resolve against the effective
+    // appearance, which follows the theme (see ThemeStore.applyAppearance).
+    static let surfacePrimary    = NSColor(name: "surfacePrimary") { appearance in
+        appearance.isDark ? NSColor(hex: "#26272D") : NSColor(hex: "#FFFFFF")
+    }
+    static let surfaceSecondary  = NSColor(name: "surfaceSecondary") { appearance in
+        appearance.isDark ? NSColor(hex: "#1E1F24") : NSColor(hex: "#F7F8FA")
+    }
+
+    // MARK: - Foreground on surfaces
     // Use these for text/icons drawn on surfacePrimary/surfaceSecondary
-    // (URL bar, popovers, cards). They stay dark across all themes so
-    // they remain readable on light surfaces even when the chrome is dark.
-    static let onSurfacePrimary   = NSColor(hex: "#1A1A1A")
-    static let onSurfaceSecondary = NSColor(hex: "#5A5E6B")
-    static let onSurfaceMuted     = NSColor(hex: "#8B8F9C")
+    // (popovers, cards, settings). System label colors keep contrast in both
+    // light and dark appearances.
+    static let onSurfacePrimary   = NSColor.labelColor
+    static let onSurfaceSecondary = NSColor.secondaryLabelColor
+    static let onSurfaceMuted     = NSColor.secondaryLabelColor
 }
 
 // MARK: - Layout Constants
@@ -37,6 +52,12 @@ enum Layout {
     static let toolbarHeight: CGFloat        = 52
     static let tabRowHeight: CGFloat         = 32
     static let urlBarHeight: CGFloat         = 36
+    static let toolbarControlHeight: CGFloat = 34
+    /// Inset between the window edge and the floating content card.
+    static let chromeEdge: CGFloat           = 8
+    /// Corner radius of the content card — concentric with the window corner
+    /// across the `chromeEdge` gap.
+    static let contentCornerRadius: CGFloat  = 14
     static let quickSearchWidth: CGFloat     = 650
     static let quickSearchInputHeight: CGFloat = 48
     static let quickSearchResultHeight: CGFloat = 40
@@ -84,7 +105,7 @@ enum SettingsColors {
     @MainActor static var hover: Color        { Color(nsColor: ThemeStore.shared.accentColor).opacity(0.12) }
 
     // MARK: - Static (non-themed)
-    static let surface       = Color.white
+    static let surface       = Color(nsColor: Colors.surfacePrimary)
     static let danger        = Color(hex: "#EF4444")
     static let allowGreen    = Color(hex: "#22C55E")
     static let denyRed       = Color(hex: "#EF4444")
@@ -117,6 +138,16 @@ extension Color {
             blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+}
+
+// MARK: - Appearance helpers
+
+extension NSAppearance {
+    var isDark: Bool {
+        bestMatch(from: [.aqua, .darkAqua, .vibrantDark, .vibrantLight]).map {
+            $0 == .darkAqua || $0 == .vibrantDark
+        } ?? false
     }
 }
 

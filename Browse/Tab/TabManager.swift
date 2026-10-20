@@ -7,6 +7,11 @@ final class TabManager {
     var tabs: [BrowserTab] = []
     var selectedTabID: UUID?
 
+    /// Called right after a tab is added, replaced or closed. Web extensions
+    /// use it to learn about a tab before its page can run scripts that ask
+    /// "which tab am I in?"; the window's 50 ms poll would be too late.
+    var onTabsChanged: (() -> Void)?
+
     private let pinnedStore = PinnedTabStore()
 
     var selectedTab: BrowserTab? {
@@ -43,7 +48,37 @@ final class TabManager {
             tabs.append(tab)
         }
         selectedTabID = tab.id
+        onTabsChanged?()
         return tab
+    }
+
+    /// Insert an already-built tab after the current one and select it.
+    func adoptTab(_ tab: BrowserTab) {
+        if let idx = selectedIndex {
+            tabs.insert(tab, at: idx + 1)
+        } else {
+            tabs.append(tab)
+        }
+        selectedTabID = tab.id
+        onTabsChanged?()
+    }
+
+    /// Swap `tab` for a fresh tab at the same position that loads `url`.
+    /// Needed when a tab moves into or out of a web extension's own pages:
+    /// WebKit only loads those in a web view built from that extension's
+    /// configuration (see `WebExtensionManager.needsWebViewSwap`).
+    @discardableResult
+    func replaceTab(_ tab: BrowserTab, loading url: URL) -> BrowserTab? {
+        guard let index = tabs.firstIndex(of: tab) else { return nil }
+        let replacement = BrowserTab(url: url)
+        replacement.isPinned = tab.isPinned
+        let wasSelected = tab.id == selectedTabID
+        tab.webView.pauseAllMediaPlayback()
+        tab.webView.load(URLRequest(url: URL(string: "about:blank")!))
+        tabs[index] = replacement
+        if wasSelected { selectedTabID = replacement.id }
+        onTabsChanged?()
+        return replacement
     }
 
     func closeTab(_ tab: BrowserTab) {
@@ -81,6 +116,7 @@ final class TabManager {
                 selectedTabID = tabs[newIndex].id
             }
         }
+        onTabsChanged?()
     }
 
     func closeOtherTabs(except tab: BrowserTab) {

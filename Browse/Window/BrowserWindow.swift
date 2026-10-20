@@ -13,13 +13,13 @@ final class BrowserWindow: NSWindow {
         titleVisibility = .hidden
         minSize = NSSize(width: Layout.windowMinWidth, height: Layout.windowMinHeight)
         isReleasedWhenClosed = false
-        backgroundColor = Colors.chromeBg
+        // Transparent window — the root view draws behind-window glass tinted
+        // with the theme chrome color (see MainSplitViewController.loadView).
+        isOpaque = false
+        backgroundColor = .clear
 
         // Allow fullscreen for both window and element (video) fullscreen
         collectionBehavior = [.fullScreenPrimary]
-
-        // Explicitly set appearance so macOS renders traffic lights with correct colors
-        appearance = NSAppearance(named: .aqua)
 
         // Attach a minimal toolbar so the titlebar region has proper height
         let toolbar = NSToolbar(identifier: "BrowserToolbar")
@@ -41,7 +41,8 @@ final class BrowserWindow: NSWindow {
 
     /// Re-apply theme-dependent colors (called by BrowserWindowController on theme change).
     func applyActiveTheme() {
-        backgroundColor = Colors.chromeBg
+        // Appearance follows the theme app-wide (ThemeStore); nothing to repaint here.
+        invalidateShadow()
     }
 
     @objc private func willEnterFullScreen() {

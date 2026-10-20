@@ -1,0 +1,21 @@
+// Copy to Config/Signing.local.xcconfig (gitignored) and fill in your team.
+// Find your Team ID with:  security find-identity -v -p codesigning
+// (the 10-character OU of your "Apple Development" certificate), or in
+// developer.apple.com > Membership.
+
+BLUR_DEVELOPMENT_TEAM = ABCDE12345
+BLUR_BUNDLE_IDENTIFIER = com.example.blur-browser
+
+// Debug: sign with your Apple Development certificate. A real (non ad-hoc)
+// signature is what 1Password's "add browser" check needs.
+BLUR_SIGN_IDENTITY_Debug = Apple Development
+
+// Release, before Apple grants the passkey entitlement: same as Debug.
+BLUR_SIGN_IDENTITY_Release = Apple Development
+BLUR_PROFILE_Release =
+BLUR_ENTITLEMENTS_Release = Browse/Resources/Browse.Debug.entitlements
+
+// Release, after the grant (see docs/passkeys.md):
+// BLUR_SIGN_IDENTITY_Release = Developer ID Application
+// BLUR_PROFILE_Release = <name of your Developer ID provisioning profile>
+// BLUR_ENTITLEMENTS_Release = Browse/Resources/Browse.entitlements

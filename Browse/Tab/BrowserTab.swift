@@ -58,12 +58,22 @@ final class BrowserTab: Identifiable {
     let webView: WKWebView
     private var observations: [NSKeyValueObservation] = []
 
+    /// Host of the web extension whose pages this tab's web view can show
+    /// (`webkit-extension://<host>/`), or nil for a normal web tab. Extension
+    /// pages only load in a web view built from that extension's
+    /// configuration, so tabs are swapped when crossing that boundary.
+    let extensionPageHost: String?
+
     init(url: URL? = nil, configuration: WKWebViewConfiguration? = nil) {
         self.id = UUID()
         self.url = url
         self.title = "New Tab"
 
-        let config = configuration ?? Self.makeFilterConfiguration()
+        let extensionConfig = configuration == nil
+            ? url.flatMap { WebExtensionManager.shared.webViewConfiguration(for: $0) }
+            : nil
+        self.extensionPageHost = extensionConfig == nil ? nil : url?.host
+        let config = configuration ?? extensionConfig ?? Self.makeFilterConfiguration()
         let wv = WKWebView(frame: .zero, configuration: config)
         wv.allowsBackForwardNavigationGestures = true
         self.webView = wv
@@ -249,12 +259,19 @@ final class BrowserTab: Identifiable {
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
         config.preferences.setValue(true, forKey: "fullScreenEnabled")
         config.preferences.isElementFullscreenEnabled = true
+        // Without the passkey entitlement, swaps WebKit's WebAuthn for our
+        // CTAP2 security key client.
+        PasskeySupport.configure(config)
         config.applicationNameForUserAgent = "Version/26.0 Safari/605.1.15"
 
         // Share the default (persistent) website data store across all tabs so
         // cookies, local storage, and session state survive across app launches.
         config.websiteDataStore = .default()
         config.processPool = BrowserTab.sharedProcessPool
+
+        // Web extensions: content scripts, tabs/windows APIs and action popups
+        // all go through the one app-wide controller.
+        config.webExtensionController = WebExtensionManager.shared.controller
 
         // Early hide — documentStart, all frames
         if let earlyHideURL = Bundle.main.url(forResource: "content-filter", withExtension: "js"),

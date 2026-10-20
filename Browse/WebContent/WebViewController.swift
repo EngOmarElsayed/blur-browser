@@ -17,6 +17,8 @@ final class WebViewController: NSViewController {
     private var historyStore: HistoryStore?
     private var quickSearchOverlay: QuickSearchOverlay?
     private var errorPageHosting: NSHostingController<ErrorPageView>?
+    /// Virtual cursor + input blocker for agent actions (see AgentActionOverlay).
+    fileprivate var agentOverlay: AgentActionOverlay?
 
     var onNewTabRequested: ((URL) -> Void)?
 
@@ -49,8 +51,6 @@ final class WebViewController: NSViewController {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    private let cornerMaskView = CornerMaskView()
-
     /// Top-left overlay for the password Save/Update prompt. Mirrors the
     /// coordinator's `pendingSaveCredential` via a 50ms polling Task (same
     /// pattern as BrowserWindowController's tab-selection observer).
@@ -77,6 +77,12 @@ final class WebViewController: NSViewController {
     override func loadView() {
         view = NSView()
         view.wantsLayer = true
+        // The page is a floating rounded card. A real layer mask (rather than
+        // painting chrome-colored corners on top) is required now that the
+        // chrome behind it is translucent glass.
+        view.layer?.cornerRadius = Layout.contentCornerRadius
+        view.layer?.cornerCurve = .continuous
+        view.layer?.masksToBounds = true
     }
 
     override func viewDidLayout() {
@@ -153,10 +159,6 @@ final class WebViewController: NSViewController {
         // doesn't depend on WKWebView loading anything.
         updateNewTabWallpaper(for: tab)
 
-        // Corner mask on top of web view to fake rounded corners
-        cornerMaskView.removeFromSuperview()
-        view.addSubview(cornerMaskView)
-
         // Save-password prompt overlay — top-left of the web content area.
         // Hit-tests through to the web view except inside the prompt itself.
         savePromptOverlay.frame = view.bounds
@@ -193,12 +195,11 @@ final class WebViewController: NSViewController {
     private func layoutCurrentWebView() {
         guard let wv = currentWebView else { return }
         wv.frame = view.bounds
-        cornerMaskView.frame = view.bounds
         // Keep error page (if any) sized to fill the content area
         errorPageHosting?.view.frame = view.bounds
         wallpaperView.frame = view.bounds
         privacyReportHostingView.frame = view.bounds
-        // Re-assert z-order: [wkwebview] < [wallpaper] < [privacyReport] < [cornerMask] < [quickSearchOverlay]
+        // Re-assert z-order: [wkwebview] < [wallpaper] < [privacyReport] < [savePrompt] < [quickSearchOverlay]
         // addSubview without a positioning arg moves the subview to the top.
         if wallpaperView.superview === view {
             wallpaperView.removeFromSuperview()
@@ -208,10 +209,8 @@ final class WebViewController: NSViewController {
             privacyReportHostingView.removeFromSuperview()
             view.addSubview(privacyReportHostingView)
         }
-        cornerMaskView.removeFromSuperview()
-        view.addSubview(cornerMaskView)
 
-        // Keep the save-password overlay above the corner mask.
+        // Keep the save-password overlay above the page content.
         if savePromptOverlay.superview === view {
             savePromptOverlay.frame = view.bounds
             savePromptOverlay.removeFromSuperview()
@@ -236,7 +235,7 @@ final class WebViewController: NSViewController {
             view.addSubview(wallpaperView)
         }
 
-        // Privacy report overlay sits above wallpaper, below cornerMask.
+        // Privacy report overlay sits above the wallpaper.
         privacyReportHostingView.frame = view.bounds
         privacyReportHostingView.autoresizingMask = [.width, .height]
         if privacyReportHostingView.superview !== view {
@@ -587,7 +586,7 @@ final class WebViewController: NSViewController {
         hosting.view.autoresizingMask = [.width, .height]
         hosting.view.alphaValue = 0
 
-        view.addSubview(hosting.view, positioned: .below, relativeTo: cornerMaskView)
+        view.addSubview(hosting.view, positioned: .above, relativeTo: currentWebView)
         errorPageHosting = hosting
 
         // Animate in
@@ -613,8 +612,25 @@ final class WebViewController: NSViewController {
         tabManager.tabs.first(where: { $0.webView === webView })
     }
 
+    func replaceTab(_ tab: BrowserTab, loading url: URL) {
+        tabManager.replaceTab(tab, loading: url)
+    }
+
     func openURLInNewTab(_ url: URL) {
         onNewTabRequested?(url)
+    }
+
+    /// A tab for `window.open` / `target=_blank`, built around WebKit's
+    /// configuration so the opener link survives. WebKit loads it.
+    func adoptNewWindowTab(configuration: WKWebViewConfiguration) -> BrowserTab {
+        let tab = BrowserTab(configuration: configuration)
+        tabManager.adoptTab(tab)
+        return tab
+    }
+
+    func closeTabForWebView(_ webView: WKWebView) {
+        guard let tab = tabForWebView(webView) else { return }
+        tabManager.closeTab(tab)
     }
 
     // MARK: - Quick Search
@@ -818,50 +834,19 @@ final class WebViewController: NSViewController {
     }
 }
 
-// MARK: - Corner Mask View
+// MARK: - Agent actions
 
-/// Draws the chrome background color into each corner on top of the WKWebView,
-/// faking rounded corners. WKWebView's internal compositing layers ignore
-/// parent masksToBounds, so this overlay paints over the sharp corners instead.
-private final class CornerMaskView: NSView {
-
-    private let maskLayer = CAShapeLayer()
-    private let radius: CGFloat = 16
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        wantsLayer = true
-        // Fill the corners with chrome color, cut out the rounded rect center
-        maskLayer.fillRule = .evenOdd
-        maskLayer.fillColor = Colors.chromeBg.cgColor
-        layer?.addSublayer(maskLayer)
+extension WebViewController: AgentActionHosting {
+    /// The agent's cursor/blocking overlay, created on first use and raised
+    /// above everything in the content area each time an action starts.
+    func agentActionOverlay() -> AgentActionOverlay {
+        let overlay = agentOverlay ?? AgentActionOverlay(frame: view.bounds)
+        agentOverlay = overlay
+        overlay.frame = view.bounds
+        if view.subviews.last !== overlay {
+            overlay.removeFromSuperview()
+            view.addSubview(overlay, positioned: .above, relativeTo: nil)
+        }
+        return overlay
     }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError() }
-
-    // Use the layer-update path so updateLayer() is called on setNeedsDisplay.
-    // This lets reapplyTheme() re-read the chrome color after a theme switch
-    // (the CAShapeLayer's fillColor otherwise stays cached at the old value).
-    override var wantsUpdateLayer: Bool { true }
-
-    override func updateLayer() {
-        super.updateLayer()
-        maskLayer.fillColor = Colors.chromeBg.cgColor
-    }
-
-    override func layout() {
-        super.layout()
-        let rect = bounds
-        maskLayer.frame = rect
-
-        // Outer path = full rect, inner path = rounded rect (punched out)
-        let outer = CGMutablePath()
-        outer.addRect(rect)
-        outer.addRoundedRect(in: rect, cornerWidth: radius, cornerHeight: radius)
-        maskLayer.path = outer
-    }
-
-    // Pass all events through — this is purely visual
-    override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }

@@ -8,8 +8,10 @@ A native macOS browser app using **hybrid AppKit + SwiftUI** architecture. AppKi
 
 ```bash
 # Build
-xcodebuild -project Browse.xcodeproj -scheme Browse -configuration Debug build
+xcodebuild -project Blur-Browser.xcodeproj -scheme Blur-Browser -configuration Debug build
 ```
+
+Signing comes from `Config/Signing.xcconfig` — don't put team/profile/bundle id back into the target's build settings. Forks set their team in `Config/Signing.local.xcconfig` (see `docs/passkeys.md`).
 
 The `.xcodeproj` is managed directly in Xcode — no xcodegen. Add/remove files through Xcode's project navigator.
 
@@ -57,7 +59,8 @@ Browse/
 ├── WebContent/
 │   ├── WebViewController.swift        # NSViewController hosting WKWebView + find bar + quick search overlay
 │   ├── WebViewCoordinator.swift       # WKNavigationDelegate + WKUIDelegate, KVO observations
-│   └── WebViewConfiguration.swift     # WKWebViewConfiguration factory
+│   ├── WebViewConfiguration.swift     # WKWebViewConfiguration factory
+│   └── PasskeySupport.swift           # Hides WebAuthn unless signed with the passkey entitlement (docs/passkeys.md)
 ├── Search/
 │   ├── QuickSearchPanel.swift         # QuickSearchOverlay — NSHostingView overlay with blocking dim view
 │   ├── QuickSearchView.swift          # SwiftUI search UI with fixed 300pt height
@@ -73,13 +76,20 @@ Browse/
 │   ├── BrowserTab.swift               # @Observable — id, url, title, isLoading, webView instance
 │   ├── TabManager.swift               # @Observable — source of truth, add/close/select/navigate
 │   └── TabSessionStore.swift          # JSON persistence for tab restore across launches
+├── Extensions/
+│   ├── WebExtensionManager.swift      # @Observable singleton — WKWebExtensionController, install/restore, controller delegate, syncTabs(for:)
+│   ├── WebExtensionAdapters.swift     # ExtensionTab / ExtensionWindow — WKWebExtensionTab/Window over BrowserTab / BrowserWindowController
+│   └── NativeMessagingBridge.swift    # runtime.connectNative → Chrome-style stdio native messaging hosts
 ├── Shared/
 │   ├── Constants.swift                # Colors, layout values, typography, app constants, NSColor hex init
 │   └── KeyboardShortcuts.swift        # Shortcut struct definitions (currently unused — shortcuts are in AppMenuBuilder)
 └── Resources/
     ├── Assets.xcassets/               # AppIcon, AccentColor
     ├── Info.plist
-    └── Browse.entitlements            # com.apple.security.network.client
+    ├── Browse.entitlements            # Release — managed passkey entitlement (needs the "Blur3" profile)
+    └── Browse.Debug.entitlements      # Debug — no managed keys
+Config/Signing.xcconfig                # Target signing; local overrides in gitignored Config/Signing.local.xcconfig (docs/passkeys.md)
+Extensions/Samples/hello-blur/         # Sample unpacked extension (docs/extensions.md)
 ```
 
 ## Do NOT

@@ -8,41 +8,35 @@ struct PinnedTabItemView: View {
     let onUnpin: () -> Void
     let onDuplicate: () -> Void
 
-    var body: some View {
-        ZStack {
-            // Background
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected
-                      ? Color(nsColor: Colors.surfacePrimary)
-                      : isHovered
-                        ? Color(nsColor: Colors.surfacePrimary).opacity(0.5)
-                        : Color(nsColor: Colors.surfacePrimary).opacity(0.25)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(
-                            isSelected
-                                ? Color(nsColor: Colors.accentPrimary).opacity(0.6)
-                                : Color(nsColor: Colors.borderLight).opacity(0.4),
-                            lineWidth: isSelected ? 1.5 : 0.5
-                        )
-                )
+    private let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
 
-            // Favicon or letter fallback
-            FaviconView(faviconURL: tab.faviconURL)
-                .id(tab.faviconURL)
-        }
-        .frame(width: 35, height: 35)
-        .scaleEffect(isHovered ? 1.05 : 1.0)
-        .animation(.easeInOut(duration: 0.15), value: isHovered)
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onSelect)
-        .draggable(tab.id.uuidString)
-        .contextMenu {
-            Button("Unpin Tab", action: onUnpin)
-            Divider()
-            Button("Duplicate Tab", action: onDuplicate)
-        }
-        .help(tab.displayTitle)
+    var body: some View {
+        FaviconView(faviconURL: tab.faviconURL)
+            .id(tab.faviconURL)
+            .frame(width: 40, height: 40)
+            .glassEffect(
+                isSelected
+                    ? .regular.tint(Color(nsColor: Colors.accentPrimary).opacity(0.25)).interactive()
+                    : .regular.interactive(),
+                in: shape
+            )
+            .overlay {
+                if isSelected {
+                    shape.strokeBorder(Color(nsColor: Colors.accentPrimary).opacity(0.7), lineWidth: 1.5)
+                }
+            }
+            .scaleEffect(isHovered ? 1.06 : 1.0)
+            .animation(.smooth(duration: 0.15), value: isHovered)
+            .contentShape(shape)
+            .onTapGesture(perform: onSelect)
+            .draggable(tab.id.uuidString)
+            .contextMenu {
+                Button("Unpin Tab", systemImage: "pin.slash", action: onUnpin)
+                Divider()
+                Button("Duplicate Tab", systemImage: "plus.square.on.square", action: onDuplicate)
+            }
+            .help(tab.displayTitle)
+            .accessibilityLabel(tab.displayTitle)
+            .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
     }
 }

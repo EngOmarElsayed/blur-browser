@@ -24,6 +24,7 @@ final class ThemeStore {
         } else {
             self.currentThemeID = .default
         }
+        applyAppearance()
     }
 
     // MARK: - Public API
@@ -36,6 +37,13 @@ final class ThemeStore {
         guard id != currentThemeID else { return }
         currentThemeID = id
         defaults.set(id.rawValue, forKey: Keys.themeID)
+        applyAppearance()
+    }
+
+    /// Dark themes flip the whole app to dark Aqua so system controls, glass,
+    /// popovers and label colors all render for a dark backdrop.
+    private func applyAppearance() {
+        NSApp?.appearance = NSAppearance(named: isDark ? .darkAqua : .aqua)
     }
 
     // MARK: - Color convenience accessors

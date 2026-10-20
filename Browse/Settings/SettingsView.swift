@@ -6,139 +6,93 @@ enum SettingsTab: String, CaseIterable {
     case privacy = "Privacy"
     case permissions = "Permissions"
     case shortcuts = "Shortcuts"
+    case ai = "AI"
     case about = "About"
 }
 
+extension SettingsTab {
+    var symbol: String {
+        switch self {
+        case .general: "gearshape"
+        case .appearance: "paintpalette"
+        case .privacy: "hand.raised"
+        case .permissions: "lock.shield"
+        case .shortcuts: "command"
+        case .ai: "sparkles"
+        case .about: "info.circle"
+        }
+    }
+}
+
+/// Which Settings tab is showing — shared so other UI can deep-link a tab.
+@Observable
+@MainActor
+final class SettingsRouter {
+    static let shared = SettingsRouter()
+    var selectedTab: SettingsTab = .general
+}
+
 struct SettingsView: View {
-    @State private var selectedTab: SettingsTab = .general
+    @State private var router = SettingsRouter.shared
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 11)
-                .fill(SettingsColors.chrome)
+        VStack(spacing: 0) {
+            // Title — shares the transparent titlebar row with the native close button
+            Text("Settings")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(height: 28)
+                .frame(maxWidth: .infinity)
 
-            VStack(alignment: .center, spacing: 0) {
-                // Title bar
-                titleBar
-
-                // Tab bar
-                tabBar
-                    .padding(.bottom, 8)
-
-                // Content area
-                contentArea
+            Picker("Section", selection: $router.selectedTab.animation(.smooth(duration: 0.2))) {
+                ForEach(SettingsTab.allCases, id: \.self) { tab in
+                    Label(tab.rawValue, systemImage: tab.symbol).tag(tab)
+                }
             }
-            .padding(8)
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.large)
+            .fixedSize()
+            .padding(.top, 6)
+            .padding(.bottom, 14)
+
+            contentArea
         }
         .frame(width: 800, height: 450)
-    }
-
-    // MARK: - Title Bar
-
-    private var titleBar: some View {
-        HStack(alignment: .center) {
-            Button {
-                NSApp.keyWindow?.close()
-            } label: {
-                Image(systemName: "xmark")
-                    .foregroundStyle(Color(nsColor: ThemeStore.shared.foregroundColor))
-                    .padding(.leading, 16)
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            // Title
-            Text("Settings")
-                .font(.custom(Typography.fontFamily, size: 13).weight(.semibold))
-                .foregroundStyle(Color(nsColor: ThemeStore.shared.foregroundColor))
-                .frame(maxWidth: .infinity, alignment: .center)
-
-            Spacer()
-
-            Image(systemName: "xmark")
-                .padding(.leading, 16)
-                .opacity(0.0)
-        }
-        .frame(height: 36)
-    }
-
-    // MARK: - Tab Bar
-
-    private var tabBar: some View {
-        HStack(spacing: 4) {
-            ForEach(SettingsTab.allCases, id: \.self) { tab in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        selectedTab = tab
-                    }
-                } label: {
-                    Text(tab.rawValue)
-                        .font(.custom(Typography.fontFamily, size: 12).weight(selectedTab == tab ? .medium : .regular))
-                        .foregroundStyle(selectedTab == tab ? Color(nsColor: Colors.onSurfacePrimary) : SettingsColors.fgSecondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background {
-                            if selectedTab == tab {
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.white)
-                                    .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(height: 32)
+        .background(.background)
     }
 
     // MARK: - Content Area
 
     private var contentArea: some View {
-        ZStack {
-            UnevenRoundedRectangle(
-                topLeadingRadius: 8,
-                bottomLeadingRadius: 7.5,
-                bottomTrailingRadius: 7.5,
-                topTrailingRadius: 8
-            )
-            .fill(SettingsColors.surface)
-
-            Group {
-                switch selectedTab {
-                case .general:
-                    GeneralSettingsView()
-                case .appearance:
-                    AppearanceSettingsView()
-                case .privacy:
-                    PrivacySettingsView()
-                case .permissions:
-                    SitePermissionsSettingsView()
-                case .shortcuts:
-                    ShortcutsSettingsView()
-                case .about:
-                    AboutSettingsView()
-                }
+        Group {
+            switch router.selectedTab {
+            case .general:
+                // Native grouped Form brings its own insets
+                GeneralSettingsView()
+            case .appearance:
+                AppearanceSettingsView().settingsPanePadding()
+            case .privacy:
+                PrivacySettingsView().settingsPanePadding()
+            case .permissions:
+                SitePermissionsSettingsView().settingsPanePadding()
+            case .shortcuts:
+                ShortcutsSettingsView().settingsPanePadding()
+            case .ai:
+                // Native grouped Form brings its own insets
+                AISettingsView()
+            case .about:
+                AboutSettingsView().settingsPanePadding()
             }
-            .padding([.horizontal, .top], 20)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color(nsColor: Colors.surfaceSecondary))
+        .overlay(alignment: .top) { Divider() }
     }
 }
 
-// MARK: - Traffic Light Button
-
-private struct TrafficLightButton: View {
-    let color: Color
-    let action: () -> Void
-
-    @State private var isHovered = false
-
-    var body: some View {
-        Circle()
-            .fill(color)
-            .frame(width: 12, height: 12)
-            .opacity(isHovered ? 0.8 : 1.0)
-            .onHover { isHovered = $0 }
-            .onTapGesture(perform: action)
+private extension View {
+    func settingsPanePadding() -> some View {
+        padding([.horizontal, .top], 20)
     }
 }

@@ -15,28 +15,27 @@ struct UnpinnedTabsList: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            HStack {
-                Text("Tabs")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-                Spacer()
+            SidebarSectionHeader(title: "Tabs") {
                 Button {
                     // Route through the same action as ⌘+T so the "+" button
                     // creates the tab AND opens Quick Search on it in sync.
                     NSApp.sendAction(#selector(AppDelegate.newTab(_:)), to: nil, from: nil)
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                        .frame(width: 24, height: 24)
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: Circle())
+                .help("New Tab (⌘T)")
             }
-            .padding(.horizontal, 12)
             .padding(.vertical, 6)
 
             // Tab list (unpinned only)
             ScrollView {
-                LazyVStack(spacing: 4) {
+                LazyVStack(spacing: 2) {
                     ForEach(tabManager.unpinnedTabs) { tab in
                         TabItemView(
                             tab: tab,

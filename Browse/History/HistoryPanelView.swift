@@ -19,52 +19,45 @@ struct HistoryPanelView: View {
         VStack(spacing: 0) {
             // Header — matches sidebar style with top padding for titlebar
             HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-                    Text("History")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-                }
+                Label("History", systemImage: "clock.arrow.circlepath")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
                 Spacer()
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                        .frame(width: 24, height: 24)
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: Circle())
+                .help("Close History")
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 6)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
+            .padding(.bottom, 10)
 
             // Search field — matches sidebar search bar
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-
-                TextField("Search history...", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+
+                TextField("Search history", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(Color(nsColor: Colors.surfacePrimary))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(nsColor: Colors.borderLight), lineWidth: 1)
-            )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .glassEffect(.regular, in: Capsule())
             .padding(.horizontal, 10)
             .padding(.bottom, 8)
 
-            Divider()
-
             // Grouped history list
             ScrollView {
-                LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                LazyVStack(spacing: 0) {
                     if filteredGroups.isEmpty {
                         emptyState
                     } else {
@@ -76,8 +69,8 @@ struct HistoryPanelView: View {
                             } header: {
                                 Text(group.label)
                                     .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-                                    .padding(.horizontal, 12)
+                                    .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                                    .padding(.horizontal, 16)
                                     .padding(.vertical, 6)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
@@ -86,7 +79,6 @@ struct HistoryPanelView: View {
                 }
             }
         }
-        .background(Color(nsColor: Colors.chromeBg))
     }
 
     private var emptyState: some View {
@@ -108,24 +100,22 @@ struct HistoryPanelView: View {
             tabManager.navigate(to: entry.url)
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "globe")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
+                FaviconView(faviconURL: entry.faviconURL.flatMap(URL.init(string:)))
                     .frame(width: 16, height: 16)
 
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(entry.title.isEmpty ? entry.url : entry.title)
-                        .font(.system(size: 12))
+                        .font(.system(size: 13))
                         .foregroundStyle(Color(nsColor: Colors.foregroundPrimary))
                         .lineLimit(1)
                     Text(formattedTime(entry.timestamp))
-                        .font(.system(size: 10))
+                        .font(.system(size: 11))
                         .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 7)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

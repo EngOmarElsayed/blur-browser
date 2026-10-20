@@ -11,6 +11,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     let passwordStore = PasswordStore()
     let blocklistStore = BlocklistStore()
     private(set) var downloadManager: DownloadManager!
+    /// Agent permission state for this window only. Not persisted, so
+    /// Dangerous mode and site grants reset on relaunch.
+    let agentSession = AgentSession()
+    private(set) var agentController: AgentController!
 
     private var splitVC: MainSplitViewController!
     private var quickSearchOverlay: QuickSearchOverlay?
@@ -48,6 +52,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
         Task { await PrivacyReportStore.shared.refresh() }
 
         downloadManager = DownloadManager(store: downloadStore)
+        agentController = AgentController(tabManager: tabManager, session: agentSession)
 
         splitVC = MainSplitViewController(
             tabManager: tabManager,
@@ -55,7 +60,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
             downloadStore: downloadStore,
             downloadManager: downloadManager,
             passwordStore: passwordStore,
-            blocklistStore: blocklistStore
+            blocklistStore: blocklistStore,
+            agentController: agentController
         )
         splitVC.webViewController.onNewTabRequested = { [weak self] url in
             self?.tabManager.addNewTab(url: url)
@@ -73,6 +79,13 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
 
         window?.contentViewController = splitVC
 
+        WebExtensionManager.shared.register(self)
+        tabManager.onTabsChanged = { [weak self] in
+            guard let self else { return }
+            WebExtensionManager.shared.syncTabs(for: self)
+        }
+        splitVC.addressBar.reloadExtensionButtons()
+
         // Prevent the address bar from auto-focusing on launch.
         // Setting initialFirstResponder to the plain content view means AppKit
         // won't walk the key view loop and land on the URL text field when the
@@ -85,7 +98,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
             forName: NSWindow.didBecomeKeyNotification,
             object: window,
             queue: .main
-        ) { [weak window, weak splitVC] _ in
+        ) { [weak self, weak window, weak splitVC] _ in
+            MainActor.assumeIsolated {
+                if let self { WebExtensionManager.shared.windowDidBecomeKey(self) }
+            }
             guard let window, let splitView = splitVC?.view else { return }
             // If the first responder is a text field's field editor, clear it
             if window.firstResponder is NSText {
@@ -101,7 +117,18 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
             var lastLoading: Bool = false
             var lastDownloadSignature: String = ""
             var lastThemeID: ThemeID? = ThemeStore.shared.currentThemeID
+            var lastExtensionRevision = WebExtensionManager.shared.actionsRevision
+            var lastAgentMode: AgentPermissionMode = .ask
             while !Task.isCancelled {
+                // Report tab changes to web extensions, and refresh their
+                // toolbar buttons when an action's icon/badge changes.
+                WebExtensionManager.shared.syncTabs(for: self)
+                let extensionRevision = WebExtensionManager.shared.actionsRevision
+                if extensionRevision != lastExtensionRevision {
+                    lastExtensionRevision = extensionRevision
+                    splitVC.addressBar.reloadExtensionButtons()
+                }
+
                 // Theme change detection
                 let currentThemeID = ThemeStore.shared.currentThemeID
                 if currentThemeID != lastThemeID {
@@ -121,6 +148,11 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
                         }
                     }
                     splitVC.webViewController.refreshNewTabOverlay()
+                }
+                // Agent Dangerous-mode indicator in the toolbar
+                if agentSession.mode != lastAgentMode {
+                    lastAgentMode = agentSession.mode
+                    splitVC.addressBar.setAgentDangerous(lastAgentMode == .dangerous)
                 }
                 let currentID = tabManager.selectedTabID
                 let currentURL = tabManager.selectedTab?.url
@@ -172,6 +204,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
     nonisolated func windowWillClose(_ notification: Notification) {
         Task { @MainActor in
             TabSessionStore.save(tabManager: tabManager)
+            agentController.saveNow()
+            WebExtensionManager.shared.unregister(self)
         }
     }
 
@@ -256,6 +290,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate {
 
     func toggleHistory() {
         splitVC.toggleHistoryMode()
+    }
+
+    func toggleAgentPanel() {
+        splitVC.toggleAgentPanel()
     }
 
     func focusMode() {

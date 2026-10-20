@@ -1,0 +1,32 @@
+// Signing for the Blur-Browser target.
+//
+// The values below are upstream's (the original author's team, bundle id and
+// "Blur3" provisioning profile). Don't edit them in a fork — put your own team
+// in Config/Signing.local.xcconfig (gitignored; copy
+// Signing.local.xcconfig.example). See docs/passkeys.md.
+
+BLUR_DEVELOPMENT_TEAM = 9PYC9KWKRS
+BLUR_BUNDLE_IDENTIFIER = com.Blur-Browser.app
+
+// Debug: signed to run locally (ad-hoc) by default, without the managed
+// passkey entitlement, so it builds on any machine.
+BLUR_SIGN_STYLE_Debug = Manual
+BLUR_SIGN_IDENTITY_Debug = -
+BLUR_PROFILE_Debug =
+BLUR_ENTITLEMENTS_Debug = Browse/Resources/Browse.Debug.entitlements
+
+// Release: Developer ID + the profile that carries
+// com.apple.developer.web-browser.public-key-credential.
+BLUR_SIGN_STYLE_Release = Manual
+BLUR_SIGN_IDENTITY_Release = Developer ID Application
+BLUR_PROFILE_Release = Blur3
+BLUR_ENTITLEMENTS_Release = Browse/Resources/Browse.entitlements
+
+#include? "Signing.local.xcconfig"
+
+DEVELOPMENT_TEAM = $(BLUR_DEVELOPMENT_TEAM)
+PRODUCT_BUNDLE_IDENTIFIER = $(BLUR_BUNDLE_IDENTIFIER)
+CODE_SIGN_STYLE = $(BLUR_SIGN_STYLE_$(CONFIGURATION))
+CODE_SIGN_IDENTITY = $(BLUR_SIGN_IDENTITY_$(CONFIGURATION))
+PROVISIONING_PROFILE_SPECIFIER = $(BLUR_PROFILE_$(CONFIGURATION))
+CODE_SIGN_ENTITLEMENTS = $(BLUR_ENTITLEMENTS_$(CONFIGURATION))

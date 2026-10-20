@@ -10,6 +10,8 @@ struct TabItemView: View {
     let onDuplicate: () -> Void
     let onCloseOthers: () -> Void
 
+    private let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+
     var body: some View {
         HStack(spacing: 10) {
             // Favicon
@@ -18,71 +20,56 @@ struct TabItemView: View {
 
             // Title
             Text(tab.displayTitle)
-                .font(.system(size: 13, weight: isSelected ? .medium : .regular))
-                .foregroundStyle(isSelected
-                                 ? Color(nsColor: Colors.accentPrimary)
-                                 : Color(nsColor: Colors.foregroundSecondary)
-                )
+                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(Color(nsColor: isSelected ? Colors.foregroundPrimary : Colors.foregroundSecondary))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if isHovered {
-                Button(action: onPin) {
-                    Image(systemName: "pin")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(
-                            isSelected ? Color(nsColor: Colors.accentPrimary): Color(nsColor: Colors.foregroundMuted)
-                        )
-                        .rotationEffect(.degrees(45))
-                }
-                .buttonStyle(.plain)
-                .frame(width: 16, height: 16)
+                rowButton(symbol: "pin", help: "Pin Tab", action: onPin)
+                    .rotationEffect(.degrees(45))
             }
 
             if isHovered || isSelected {
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(
-                            isSelected ? Color(nsColor: Colors.accentPrimary): Color(nsColor: Colors.foregroundMuted)
-                        )
-                }
-                .buttonStyle(.plain)
-                .frame(width: 16, height: 16)
+                rowButton(symbol: "xmark", help: "Close Tab", action: onClose)
             }
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected
-                      ? Color(nsColor: Colors.surfacePrimary)
-                      : isHovered
-                        ? Color(nsColor: Colors.surfacePrimary).opacity(0.4)
-                        : Color.clear
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(
-                    isSelected
-                        ? Color(nsColor: Colors.accentPrimary)
-                    : .clear,
-                    lineWidth: isSelected ? 1.5 : 0
-                )
-        )
-        .padding(.horizontal, 6)
+        .padding(.vertical, 7)
+        .padding(.leading, 10)
+        .padding(.trailing, 6)
+        .background {
+            if !isSelected && isHovered {
+                shape.fill(Color(nsColor: Colors.foregroundPrimary).opacity(0.07))
+            }
+        }
+        .glassEffect(isSelected ? .regular.interactive() : .identity, in: shape)
+        .animation(.smooth(duration: 0.2), value: isSelected)
+        .padding(.horizontal, 8)
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .draggable(tab.id.uuidString)
         .contextMenu {
-            Button("Pin Tab", action: onPin)
+            Button("Pin Tab", systemImage: "pin", action: onPin)
             Divider()
-            Button("Close Tab", action: onClose)
+            Button("Close Tab", systemImage: "xmark", action: onClose)
             Button("Close Other Tabs", action: onCloseOthers)
             Divider()
-            Button("Duplicate Tab", action: onDuplicate)
+            Button("Duplicate Tab", systemImage: "plus.square.on.square", action: onDuplicate)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
+    }
+
+    private func rowButton(symbol: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+                .frame(width: 20, height: 20)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help(help)
     }
 }

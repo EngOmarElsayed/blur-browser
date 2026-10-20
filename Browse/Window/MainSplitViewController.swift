@@ -12,9 +12,12 @@ final class MainSplitViewController: NSViewController {
     let blocklistStore: BlocklistStore
     let webViewController: WebViewController
     let addressBar: AddressBarViewController
+    let agentController: AgentController
 
     private var sidebarVC: SidebarViewController!
     private var historyHostingVC: NSHostingController<HistoryPanelView>!
+    private var agentHostingVC: NSHostingController<AgentPanelView>!
+    private let agentDividerView = ResizeDividerView()
     private let leftDividerView = ResizeDividerView()
     private let rightDividerView = ResizeDividerView()
     private let borderOverlay = WindowBorderOverlayView()
@@ -23,10 +26,17 @@ final class MainSplitViewController: NSViewController {
     private var historyPanelWidth: CGFloat = 300
     private var isSidebarCollapsed = false
     private var isHistoryCollapsed = true
+    private var agentPanelWidth: CGFloat = 360
+    private(set) var isAgentCollapsed = true
     private(set) var isAddressBarHidden = false
     private var isAddressBarTemporarilyShown = false
     private var toolbarView: NSView!
     private let contentContainerView = NSView()
+    /// Theme color laid over the behind-window glass backdrop.
+    private let chromeTintView = NSView()
+    /// Soft drop shadow under the floating web content card. Lives in a
+    /// separate view because the card itself clips to its rounded corners.
+    private let cardShadowView = NSView()
     private let sidebarToggleButton = NSButton()
     private let topHoverZone = HoverDetectorView()
     private var hideTimer: Timer?
@@ -56,8 +66,10 @@ final class MainSplitViewController: NSViewController {
         downloadStore: DownloadStore,
         downloadManager: DownloadManager,
         passwordStore: PasswordStore,
-        blocklistStore: BlocklistStore
+        blocklistStore: BlocklistStore,
+        agentController: AgentController
     ) {
+        self.agentController = agentController
         self.tabManager = tabManager
         self.historyStore = historyStore
         self.downloadStore = downloadStore
@@ -77,19 +89,41 @@ final class MainSplitViewController: NSViewController {
     required init?(coder: NSCoder) { fatalError() }
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 1200, height: 800))
-        view.wantsLayer = true
-        view.layer?.backgroundColor = Colors.chromeBg.cgColor
+        // Behind-window glass: the desktop blurs through the chrome, and the
+        // theme tint on top keeps each theme's color identity.
+        let backdrop = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 1200, height: 800))
+        backdrop.material = .sidebar
+        backdrop.blendingMode = .behindWindow
+        backdrop.state = .followsWindowActiveState
+        view = backdrop
+
+        chromeTintView.wantsLayer = true
+        chromeTintView.layer?.backgroundColor = Colors.chromeTint.cgColor
+        chromeTintView.frame = backdrop.bounds
+        chromeTintView.autoresizingMask = [.width, .height]
+        backdrop.addSubview(chromeTintView)
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // -- Content container (toolbar + web view) with rounded corners --
+        // The web view clips itself to the card shape; the container stays
+        // unclipped so the card shadow and toolbar glass can breathe.
         contentContainerView.wantsLayer = true
-        contentContainerView.layer?.cornerRadius = 16
-        contentContainerView.layer?.masksToBounds = true
         view.addSubview(contentContainerView)
+
+        cardShadowView.wantsLayer = true
+        if let layer = cardShadowView.layer {
+            layer.cornerRadius = Layout.contentCornerRadius
+            layer.cornerCurve = .continuous
+            layer.backgroundColor = NSColor.windowBackgroundColor.cgColor
+            layer.shadowColor = NSColor.black.cgColor
+            layer.shadowOpacity = 0.14
+            layer.shadowRadius = 10
+            layer.shadowOffset = CGSize(width: 0, height: -2)
+        }
+        contentContainerView.addSubview(cardShadowView)
 
         // -- Toolbar --
         addressBar.onToggleSidebar = { [weak self] in
@@ -100,6 +134,9 @@ final class MainSplitViewController: NSViewController {
         }
         addressBar.onToggleReaderMode = { [weak self] in
             self?.toggleReaderMode()
+        }
+        addressBar.onToggleAgent = { [weak self] in
+            self?.toggleAgentPanel()
         }
         webViewController.onReaderAvailabilityChanged = { [weak self] available in
             self?.addressBar.setReaderAvailable(available)
@@ -153,10 +190,28 @@ final class MainSplitViewController: NSViewController {
         historyHostingVC = NSHostingController(rootView: panelView)
         historyHostingVC.sizingOptions = []
         historyHostingVC.view.wantsLayer = true
-        historyHostingVC.view.layer?.backgroundColor = Colors.chromeBg.cgColor
         addChild(historyHostingVC)
         view.addSubview(historyHostingVC.view)
         historyHostingVC.view.isHidden = true
+
+        // -- Right agent panel (created once, starts hidden) --
+        // Shares the right edge with history; opening one closes the other.
+        agentHostingVC = NSHostingController(rootView: AgentPanelView(
+            controller: agentController,
+            onDismiss: { [weak self] in
+                self?.toggleAgentPanel()
+            }
+        ))
+        agentHostingVC.sizingOptions = []
+        agentHostingVC.view.wantsLayer = true
+        addChild(agentHostingVC)
+        view.addSubview(agentHostingVC.view)
+        agentHostingVC.view.isHidden = true
+
+        agentDividerView.isHidden = true
+        view.addSubview(agentDividerView)
+        let agentPan = NSPanGestureRecognizer(target: self, action: #selector(handleAgentDividerDrag(_:)))
+        agentDividerView.addGestureRecognizer(agentPan)
 
         // -- Dividers --
         view.addSubview(leftDividerView)
@@ -191,7 +246,7 @@ final class MainSplitViewController: NSViewController {
         let toolbarHeight = Layout.toolbarHeight
         let dividerHitWidth: CGFloat = 16
         // Chrome padding — visible on right and bottom edges (left is sidebar, top is toolbar)
-        let chromeEdge: CGFloat = 8
+        let chromeEdge = Layout.chromeEdge
 
         // In full screen, the safe area top inset is 0 (no titlebar).
         // In windowed mode with fullSizeContentView, the titlebar occupies space at the top.
@@ -259,8 +314,28 @@ final class MainSplitViewController: NSViewController {
 //            view.addSubview(rightDividerView, positioned: .above, relativeTo: historyHostingVC.view)
 //        }
 
+        // ── Right agent panel ──
+        let effectiveAgentWidth = isAgentCollapsed ? 0 : agentPanelWidth
+        agentHostingVC.view.isHidden = isAgentCollapsed
+        agentHostingVC.view.frame = NSRect(
+            x: bounds.width - effectiveAgentWidth - chromeEdge,
+            y: chromeEdge,
+            width: effectiveAgentWidth,
+            height: bounds.height - chromeEdge - topInset
+        )
+        agentDividerView.isHidden = isAgentCollapsed
+        if !isAgentCollapsed {
+            agentDividerView.frame = NSRect(
+                x: bounds.width - effectiveAgentWidth - chromeEdge - (dividerHitWidth - 1) / 2 - 1,
+                y: chromeEdge, width: dividerHitWidth,
+                height: bounds.height - chromeEdge - topInset
+            )
+            view.addSubview(agentDividerView, positioned: .above, relativeTo: agentHostingVC.view)
+        }
+
         // ── Content container (toolbar + web view) ──
-        let contentRight = isHistoryCollapsed ? chromeEdge : effectiveHistoryWidth + chromeEdge + 1
+        let rightPanelWidth = !isHistoryCollapsed ? effectiveHistoryWidth : effectiveAgentWidth
+        let contentRight = rightPanelWidth == 0 ? chromeEdge : rightPanelWidth + chromeEdge + 1
         let fullContentWidth = bounds.width - contentX - contentRight
 
         // The toolbar is effectively visible if it's not hidden OR temporarily shown on hover
@@ -303,6 +378,13 @@ final class MainSplitViewController: NSViewController {
             x: 0, y: 0,
             width: fullContentWidth,
             height: webHeight
+        )
+        cardShadowView.frame = webViewController.view.frame
+        cardShadowView.layer?.shadowPath = CGPath(
+            roundedRect: cardShadowView.bounds,
+            cornerWidth: Layout.contentCornerRadius,
+            cornerHeight: Layout.contentCornerRadius,
+            transform: nil
         )
 
         // Border overlay always on top, covering full bounds
@@ -444,6 +526,17 @@ final class MainSplitViewController: NSViewController {
             ctx.duration = 0.2
             ctx.allowsImplicitAnimation = true
             isHistoryCollapsed.toggle()
+            if !isHistoryCollapsed { isAgentCollapsed = true }
+            layoutSubviews()
+        }
+    }
+
+    func toggleAgentPanel() {
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.allowsImplicitAnimation = true
+            isAgentCollapsed.toggle()
+            if !isAgentCollapsed { isHistoryCollapsed = true }
             layoutSubviews()
         }
     }
@@ -517,8 +610,8 @@ final class MainSplitViewController: NSViewController {
         // the "Blur" browser name. Blurs the web page content in real time.
         let dim = GaussianBlurView(radius: readerBlurRadius)
         dim.wantsLayer = true
-        dim.layer?.cornerRadius = 8
-        dim.layer?.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
+        dim.layer?.cornerRadius = Layout.contentCornerRadius
+        dim.layer?.cornerCurve = .continuous
         dim.layer?.masksToBounds = true
         dim.translatesAutoresizingMaskIntoConstraints = false
         host.addSubview(dim, positioned: .above, relativeTo: nil)
@@ -867,6 +960,12 @@ final class MainSplitViewController: NSViewController {
         layoutSubviews()
     }
 
+    @objc private func handleAgentDividerDrag(_ gesture: NSPanGestureRecognizer) {
+        let location = gesture.location(in: view)
+        agentPanelWidth = max(280, min(560, view.bounds.width - location.x - Layout.chromeEdge))
+        layoutSubviews()
+    }
+
     // MARK: - Theme re-render
 
     /// Invalidate every mounted view's drawing so theme-aware colors re-resolve
@@ -880,16 +979,15 @@ final class MainSplitViewController: NSViewController {
     /// Views that cache theme colors in stored properties at configuration
     /// time (e.g. the address bar) are refreshed explicitly by callers.
     func reapplyTheme() {
-        // Root split view background
-        view.layer?.backgroundColor = Colors.chromeBg.cgColor
-
-        // History panel background (created in viewDidLoad, hidden/shown via frames)
-        historyHostingVC.view.layer?.backgroundColor = Colors.chromeBg.cgColor
+        // Theme tint over the glass backdrop
+        chromeTintView.layer?.backgroundColor = Colors.chromeTint.cgColor
+        cardShadowView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
 
         // Resize divider line colors — ResizeDividerView caches the borderLight
         // token in its sublayer at init, so update them explicitly.
         leftDividerView.reapplyTheme()
         rightDividerView.reapplyTheme()
+        agentDividerView.reapplyTheme()
 
         // Sidebar toggle button tint (cached at configuration time)
         sidebarToggleButton.contentTintColor = Colors.foregroundMuted

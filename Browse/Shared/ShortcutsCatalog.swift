@@ -39,6 +39,7 @@ enum ShortcutsCatalog {
             AppShortcut(action: "Web Inspector",    shortcut: "⌥⌘C"),
             AppShortcut(action: "Easy Read",        shortcut: "⇧⌘E"),
             AppShortcut(action: "Show Downloads",   shortcut: "⌥⌘L"),
+            AppShortcut(action: "Toggle Agent",     shortcut: "⌥⌘A"),
         ]),
         ShortcutSection(title: "History", items: [
             AppShortcut(action: "Show History",     shortcut: "⌘Y"),

@@ -6,83 +6,37 @@ struct GeneralSettingsView: View {
     @State private var isDefaultBrowser = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Default Browser
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
+        Form {
+            Section {
+                LabeledContent {
+                    if isDefaultBrowser {
+                        Label("Default", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.system(size: 12, weight: .medium))
+                    } else {
+                        Button("Set as Default", action: setAsDefaultBrowser)
+                            .buttonStyle(.glassProminent)
+                            .tint(SettingsColors.accent)
+                    }
+                } label: {
                     Text("Default Browser")
-                        .font(.custom(Typography.fontFamily, size: 13))
-                        .foregroundStyle(Color(nsColor: Colors.onSurfacePrimary))
-
-                    Text(isDefaultBrowser ? "Blur-Browser is your default browser." : "Make Blur-Browser your default web browser.")
-                        .font(.custom(Typography.fontFamily, size: 11))
-                        .foregroundStyle(Color(nsColor: Colors.onSurfaceMuted))
-                }
-
-                Spacer()
-
-                if isDefaultBrowser {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color(hex: "#22C55E"))
-                        Text("Default")
-                            .font(.custom(Typography.fontFamily, size: 12).weight(.medium))
-                            .foregroundStyle(Color(hex: "#22C55E"))
-                    }
-                } else {
-                    Button {
-                        setAsDefaultBrowser()
-                    } label: {
-                        Text("Set as Default")
-                            .font(.custom(Typography.fontFamily, size: 12).weight(.medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 14)
-                            .frame(height: 28)
-                            .background(SettingsColors.accent)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
+                    Text(isDefaultBrowser
+                         ? "\(AppConstants.appName) is your default browser."
+                         : "Make \(AppConstants.appName) your default web browser.")
                 }
             }
 
-            Divider()
-                .foregroundStyle(SettingsColors.borderLight)
-
-//            Homepage
-//            VStack(alignment: .leading, spacing: 6) {
-//                Text("Homepage")
-//                    .font(.custom(Typography.fontFamily, size: 12))
-//                    .foregroundStyle(SettingsColors.fgSecondary)
-//
-//                SettingsTextField(text: $store.homepageURL, placeholder: "https://google.com")
-//            }
-
-//            // Search Engine
-//            VStack(alignment: .leading, spacing: 6) {
-//                Text("Search Engine")
-//                    .font(.custom(Typography.fontFamily, size: 12))
-//                    .foregroundStyle(SettingsColors.fgSecondary)
-//
-//                SettingsPicker(selection: $store.searchEngine, options: SearchEngine.allCases) { engine in
-//                    engine.displayName
-//                }
-//            }
-
-            // Restore tabs on launch
-            HStack {
-                Text("Restore tabs on launch")
-                    .font(.custom(Typography.fontFamily, size: 13))
-                    .foregroundStyle(Color(nsColor: Colors.onSurfacePrimary))
-
-                Spacer()
-
-                SettingsToggle(isOn: $restoreTabsOnLaunch)
+            Section {
+                Toggle(isOn: $restoreTabsOnLaunch) {
+                    Text("Restore tabs on launch")
+                    Text("Reopen the tabs you had open when you last quit.")
+                }
+                .toggleStyle(.switch)
+                .tint(SettingsColors.accent)
             }
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
         .onAppear { checkDefaultBrowser() }
     }
 
@@ -127,16 +81,8 @@ struct SettingsTextField: View {
 
     var body: some View {
         TextField(placeholder, text: $text)
-            .textFieldStyle(.plain)
-            .font(.custom(Typography.fontFamily, size: 13))
-            .padding(.horizontal, 10)
-            .frame(height: 32)
-            .background(Color.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .strokeBorder(SettingsColors.borderLight, lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .textFieldStyle(.roundedBorder)
+            .controlSize(.large)
     }
 }
 
@@ -155,40 +101,21 @@ struct SettingsPicker<T: Hashable & Identifiable>: View {
         }
         .labelsHidden()
         .pickerStyle(.menu)
-        .font(.custom(Typography.fontFamily, size: 13))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 32)
-        .background(Color.white)
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(SettingsColors.borderLight, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }
 
 // MARK: - Settings Toggle
 
+/// Native switch, tinted with the theme accent. Kept as a wrapper so every
+/// settings pane gets the same control.
 struct SettingsToggle: View {
     @Binding var isOn: Bool
 
     var body: some View {
-        Button {
-            isOn.toggle()
-        } label: {
-            ZStack(alignment: isOn ? .trailing : .leading) {
-                Capsule()
-                    .fill(isOn ? SettingsColors.accent : Color(hex: "#D0D5EB"))
-                    .frame(width: 44, height: 24)
-
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 18, height: 18)
-                    .padding(3)
-                    .shadow(color: Color.black.opacity(0.1), radius: 1, x: 0, y: 1)
-            }
-            .animation(.easeInOut(duration: 0.15), value: isOn)
-        }
-        .buttonStyle(.plain)
+        Toggle("", isOn: $isOn)
+            .toggleStyle(.switch)
+            .labelsHidden()
+            .tint(SettingsColors.accent)
     }
 }

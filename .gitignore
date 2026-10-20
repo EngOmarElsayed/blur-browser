@@ -39,3 +39,6 @@ next-env.d.ts
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Local signing overrides (see Config/Signing.local.xcconfig.example)
+Config/Signing.local.xcconfig

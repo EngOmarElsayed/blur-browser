@@ -296,6 +296,18 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
             return
         }
 
+        // Moving into or out of a web extension's own pages needs a web view
+        // built from that extension's configuration; WebKit cancels the
+        // navigation otherwise. Replace the tab's web view instead.
+        if navigationAction.targetFrame?.isMainFrame == true,
+           let url = navigationAction.request.url,
+           let tab = viewController?.tabForWebView(webView),
+           WebExtensionManager.shared.needsWebViewSwap(for: tab, to: url) {
+            decisionHandler(.cancel)
+            viewController?.replaceTab(tab, loading: url)
+            return
+        }
+
         // Update tab.url as soon as a main-frame navigation begins, so the
         // address bar reflects the target URL immediately and retry works
         // even when the navigation fails provisionally.
@@ -398,10 +410,28 @@ final class WebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WK
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
-        if navigationAction.targetFrame == nil {
-            webView.load(navigationAction.request)
+        guard navigationAction.targetFrame == nil else { return nil }
+        // The returned web view must use WebKit's `configuration`, or
+        // window.opener is lost — and with it OAuth popups like "Sign in with
+        // Google", which report back through the opener.
+        if windowFeatures.width != nil || windowFeatures.height != nil {
+            return PopupWindowController.present(
+                configuration: configuration,
+                windowFeatures: windowFeatures,
+                over: webView.window)
         }
-        return nil
+        guard let tab = viewController?.adoptNewWindowTab(configuration: configuration) else {
+            webView.load(navigationAction.request)
+            return nil
+        }
+        tab.webView.navigationDelegate = self
+        tab.webView.uiDelegate = self
+        return tab.webView
+    }
+
+    /// The page called `window.close()` on a tab it opened.
+    func webViewDidClose(_ webView: WKWebView) {
+        viewController?.closeTabForWebView(webView)
     }
 
     // MARK: - JavaScript Dialogs (alert / confirm / prompt)

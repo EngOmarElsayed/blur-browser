@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- No com.apple.developer.web-browser.public-key-credential here: it is a
+	     managed entitlement tied to a provisioning profile. See docs/passkeys.md. -->
+</dict>
+</plist>

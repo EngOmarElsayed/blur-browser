@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Hello Blur",
+  "version": "1.0",
+  "description": "Sample extension for testing Blur-Browser's web extension support: toolbar popup, tabs API, content script, badge.",
+  "icons": { "48": "icon.png", "128": "icon.png" },
+  "action": {
+    "default_title": "Hello Blur",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icon.png", "32": "icon.png" }
+  },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["tabs", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_idle" }
+  ]
+}

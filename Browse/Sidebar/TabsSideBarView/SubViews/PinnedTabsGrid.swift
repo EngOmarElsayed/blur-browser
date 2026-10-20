@@ -14,7 +14,7 @@ struct PinnedTabsGrid: View {
     let tabManager: TabManager
 
     private let pinnedGridColumns = [
-        GridItem(.adaptive(minimum: 35, maximum: 36), spacing: 4)
+        GridItem(.adaptive(minimum: 40, maximum: 44), spacing: 8)
     ]
     
     var body: some View {
@@ -22,15 +22,12 @@ struct PinnedTabsGrid: View {
             if tabManager.pinnedTabs.isEmpty {
                 pinnedEmptyState
             } else {
-                Text("Pinned")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 6)
+                SidebarSectionHeader(title: "Pinned")
+                    .padding(.bottom, 8)
 
-                // Grid
-                LazyVGrid(columns: pinnedGridColumns, spacing: 6) {
+                // Grid — one glass container so neighboring tiles blend as they move
+                GlassEffectContainer(spacing: 8) {
+                LazyVGrid(columns: pinnedGridColumns, spacing: 8) {
                     ForEach(tabManager.pinnedTabs) { tab in
                         PinnedTabItemView(
                             tab: tab,
@@ -45,13 +42,13 @@ struct PinnedTabsGrid: View {
                         }
                     }
                 }
-                .padding(.horizontal, 10)
+                }
+                .padding(.horizontal, 12)
             }
 
-            // Divider
             Divider()
-                .padding(.horizontal, 8)
-                .padding(.top, 12)
+                .padding(.horizontal, 14)
+                .padding(.top, 14)
         }
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -76,21 +73,46 @@ struct PinnedTabsGrid: View {
     private var pinnedEmptyState: some View {
         VStack(spacing: 6) {
             Image(systemName: "pin")
-                .font(.system(size: 14, weight: .light))
-                .foregroundStyle(Color(nsColor: Colors.foregroundMuted).opacity(0.5))
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
                 .rotationEffect(.degrees(45))
 
-            Text("Right-click a tab to pin it")
-                .font(.system(size: 10))
-                .foregroundStyle(Color(nsColor: Colors.foregroundMuted).opacity(0.5))
+            Text("Drag a tab here to pin it")
+                .font(.system(size: 11))
+                .foregroundStyle(Color(nsColor: Colors.foregroundMuted))
         }
         .frame(maxWidth: .infinity)
         .frame(height: 52)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                .foregroundStyle(Color(nsColor: Colors.borderLight))
+                .foregroundStyle(Color(nsColor: Colors.foregroundMuted).opacity(0.5))
         )
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 12)
+    }
+}
+
+// MARK: - Section Header
+
+/// Small, legible section label used across the sidebar ("Pinned", "Tabs").
+struct SidebarSectionHeader<Accessory: View>: View {
+    let title: String
+    @ViewBuilder var accessory: Accessory
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color(nsColor: Colors.foregroundSecondary))
+            Spacer()
+            accessory
+        }
+        .padding(.horizontal, 16)
+    }
+}
+
+extension SidebarSectionHeader where Accessory == EmptyView {
+    init(title: String) {
+        self.init(title: title) { EmptyView() }
     }
 }

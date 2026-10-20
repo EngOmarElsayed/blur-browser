@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 13px -apple-system, system-ui; margin: 0; padding: 14px; width: 260px; }
+  h1 { font-size: 14px; margin: 0 0 8px; }
+  p { margin: 4px 0; color: #666; word-break: break-all; }
+  button { margin-top: 10px; width: 100%; padding: 6px; border-radius: 8px; border: 0; background: #4A9FD8; color: white; font-weight: 600; }
+  #result { margin-top: 8px; color: #1A1A1A; }
+  @media (prefers-color-scheme: dark) { p { color: #aaa; } #result { color: #eee; } }
+</style>
+</head>
+<body>
+  <h1>Hello from an extension 👋</h1>
+  <p id="title">…</p>
+  <p id="url"></p>
+  <p id="stats"></p>
+  <button id="highlight">Outline this page</button>
+  <div id="result"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

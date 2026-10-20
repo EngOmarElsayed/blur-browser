@@ -64,7 +64,8 @@ struct SidebarView: View {
                 onToggleHistory: onToggleHistory
             )
             .padding(.horizontal, 12)
-            .padding(.vertical, 5)
+            .padding(.top, 6)
+            .padding(.bottom, 4)
         }
         .background(Color(nsColor: .clear))
     }
